@@ -1,5 +1,6 @@
 import Link from "next/link";
 import UserMenu from "@/components/UserMenu";
+import BackButton from "@/components/BackButton";
 import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
@@ -31,7 +32,10 @@ export default async function MainLayout({ children }: { children: React.ReactNo
           <UserMenu name={user.name} />
         </div>
       </header>
-      <main className="max-w-7xl mx-auto px-4 py-6">{children}</main>
+      <main className="max-w-7xl mx-auto px-4 py-6">
+        <BackButton />
+        {children}
+      </main>
     </div>
   );
 }
