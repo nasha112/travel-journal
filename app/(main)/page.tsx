@@ -26,7 +26,7 @@ export default async function HomePage({
   const year = sp.year ? Number(sp.year) : null;
   const type = (sp.type as LocationType) || null;
 
-  // 全部旅行（用于年份下拉）
+  // 全部旅行（仅取开始日期，用于年份下拉）
   const allTrips = await prisma.trip.findMany({
     where: { userId: user.id },
     select: { startDate: true },
@@ -35,43 +35,80 @@ export default async function HomePage({
     new Set(allTrips.map((t) => t.startDate?.getFullYear()).filter((y): y is number => !!y))
   ).sort((a, b) => b - a);
 
-  const trips = await prisma.trip.findMany({
-    where: {
-      userId: user.id,
-      ...(year
-        ? {
-            startDate: {
-              gte: new Date(`${year}-01-01T00:00:00`),
-              lt: new Date(`${year + 1}-01-01T00:00:00`),
-            },
-          }
-        : {}),
-      ...(type
-        ? { days: { some: { locations: { some: { type } } } } }
-        : {}),
-    },
-    include: {
-      days: {
-        orderBy: { dayNumber: "asc" },
-        include: {
-          locations: { include: { blogs: { select: { id: true } } } },
-        },
-      },
-      expenses: true,
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  // 筛选条件（年份 + 地点类型）
+  const baseWhere = {
+    userId: user.id,
+    ...(year
+      ? {
+          startDate: {
+            gte: new Date(`${year}-01-01T00:00:00`),
+            lt: new Date(`${year + 1}-01-01T00:00:00`),
+          },
+        }
+      : {}),
+    ...(type ? { days: { some: { locations: { some: { type } } } } } : {}),
+  } as const;
 
-  // 汇总统计
-  const totalLocations = trips.reduce(
+  // 查询优化：拆分为「地图+统计」与「旅行列表」两个定向查询，并行执行。
+  // 只取所需字段（博客只计数、消费只取金额），避免全量联表传输。
+  const [mapTrips, listTrips] = await Promise.all([
+    prisma.trip.findMany({
+      where: baseWhere,
+      select: {
+        id: true,
+        title: true,
+        cover: true,
+        description: true,
+        startDate: true,
+        endDate: true,
+        days: {
+          orderBy: { dayNumber: "asc" },
+          select: {
+            locations: {
+              select: {
+                id: true,
+                name: true,
+                lat: true,
+                lng: true,
+                city: true,
+                type: true,
+                _count: { select: { blogs: true } },
+              },
+            },
+          },
+        },
+        expenses: { select: { amount: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.trip.findMany({
+      where: baseWhere,
+      select: {
+        id: true,
+        title: true,
+        cover: true,
+        description: true,
+        startDate: true,
+        endDate: true,
+        days: { select: { _count: { select: { locations: true } } } },
+        expenses: { select: { amount: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 6,
+    }),
+  ]);
+
+  // 汇总统计（基于地图查询结果）
+  const totalLocations = mapTrips.reduce(
     (sum, t) => sum + t.days.reduce((s, d) => s + d.locations.length, 0),
     0
   );
-  const totalBlogs = trips.reduce(
-    (sum, t) => sum + t.days.reduce((s, d) => s + d.locations.filter((l) => l.blogs.length > 0).length, 0),
+  const totalBlogs = mapTrips.reduce(
+    (sum, t) =>
+      sum + t.days.reduce((s, d) => s + d.locations.filter((l) => l._count.blogs > 0).length, 0),
     0
   );
-  const totalExpense = trips.reduce(
+  const totalExpense = mapTrips.reduce(
     (sum, t) => sum + t.expenses.reduce((s, e) => s + Number(e.amount), 0),
     0
   );
@@ -79,7 +116,7 @@ export default async function HomePage({
   // 地图点位与路线
   const points: MapPoint[] = [];
   const lines: [number, number][][] = [];
-  for (const trip of trips) {
+  for (const trip of mapTrips) {
     const tripLine: [number, number][] = [];
     let order = 1; // 每趟旅行内按行程顺序编号
     for (const day of trip.days) {
@@ -92,7 +129,7 @@ export default async function HomePage({
           lat: loc.lat,
           lng: loc.lng,
           city: loc.city,
-          hasBlog: loc.blogs.length > 0,
+          hasBlog: loc._count.blogs > 0,
           order,
         });
         tripLine.push([loc.lat, loc.lng]);
@@ -121,7 +158,7 @@ export default async function HomePage({
       {/* 统计卡片 */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "旅行次数", value: trips.length, icon: "✈️" },
+          { label: "旅行次数", value: mapTrips.length, icon: "✈️" },
           { label: "打卡地点", value: totalLocations, icon: "📍" },
           { label: "游记数量", value: totalBlogs, icon: "📝" },
           { label: "累计消费", value: `¥${totalExpense.toLocaleString("zh-CN", { maximumFractionDigits: 0 })}`, icon: "💰" },
@@ -164,7 +201,7 @@ export default async function HomePage({
         </div>
       </div>
 
-      {/* 旅行列表 */}
+      {/* 旅行列表（独立轻量查询，仅取前 6 条） */}
       <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-semibold text-gray-800">我的旅行</h2>
@@ -172,14 +209,14 @@ export default async function HomePage({
             查看全部
           </Link>
         </div>
-        {trips.length === 0 ? (
+        {listTrips.length === 0 ? (
           <div className="bg-white rounded-xl border border-dashed border-gray-300 p-8 text-center text-gray-400 text-sm">
             暂无旅行记录
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {trips.slice(0, 6).map((trip) => {
-              const locCount = trip.days.reduce((s, d) => s + d.locations.length, 0);
+            {listTrips.map((trip) => {
+              const locCount = trip.days.reduce((s, d) => s + d._count.locations, 0);
               const exp = trip.expenses.reduce((s, e) => s + Number(e.amount), 0);
               return (
                 <Link
