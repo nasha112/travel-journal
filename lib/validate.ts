@@ -1,4 +1,4 @@
-import { LOCATION_TYPES, EXPENSE_CATEGORIES } from "@/lib/utils";
+import { LOCATION_TYPES, EXPENSE_CATEGORIES, TRIP_STATUSES } from "@/lib/utils";
 
 export interface ValidationResult {
   ok: boolean;
@@ -33,6 +33,10 @@ export function validateTripInput(body: Record<string, unknown>): ValidationResu
   const cover = body.cover as string | undefined;
   if (cover && typeof cover !== "string")
     return { ok: false, error: "封面地址格式不正确" };
+
+  const status = body.status as string | undefined;
+  if (status && !(TRIP_STATUSES as readonly string[]).includes(status))
+    return { ok: false, error: "旅行状态不合法" };
 
   return { ok: true };
 }

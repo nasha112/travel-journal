@@ -12,6 +12,7 @@ const DEMO_EMAIL = "demo@travel.com";
 const trips = [
   {
     title: "云南七日游 · 昆明大理丽江",
+    status: "COMPLETED",
     description:
       "第一次去云南，从春城昆明一路向西，在大理洱海边骑行，在丽江古城发呆，最后登上了玉龙雪山。一路蓝天白云，印象深刻。",
     startDate: "2026-07-01",
@@ -45,9 +46,9 @@ const trips = [
           },
         ],
         expenses: [
-          { category: "交通", amount: 860, note: "广州→昆明 机票", locationIdx: null },
-          { category: "住宿", amount: 238, note: "滇池边民宿（第1晚）", locationIdx: null },
-          { category: "餐饮", amount: 78, note: "晚餐 过桥米线", locationIdx: 0 },
+          { category: "TRANSPORT", amount: 860, note: "广州→昆明 机票", locationIdx: null },
+          { category: "ACCOMMODATION", amount: 238, note: "滇池边民宿（第1晚）", locationIdx: null },
+          { category: "FOOD", amount: 78, note: "晚餐 过桥米线", locationIdx: 0 },
         ],
       },
       {
@@ -66,10 +67,10 @@ const trips = [
           },
         ],
         expenses: [
-          { category: "交通", amount: 145, note: "昆明→大理 高铁", locationIdx: null },
-          { category: "住宿", amount: 268, note: "古城客栈（第2晚）", locationIdx: null },
-          { category: "餐饮", amount: 96, note: "大理古城晚餐", locationIdx: 0 },
-          { category: "购物", amount: 65, note: "古城买的手工扎染", locationIdx: 0 },
+          { category: "TRANSPORT", amount: 145, note: "昆明→大理 高铁", locationIdx: null },
+          { category: "ACCOMMODATION", amount: 268, note: "古城客栈（第2晚）", locationIdx: null },
+          { category: "FOOD", amount: 96, note: "大理古城晚餐", locationIdx: 0 },
+          { category: "SHOPPING", amount: 65, note: "古城买的手工扎染", locationIdx: 0 },
         ],
       },
       {
@@ -88,9 +89,9 @@ const trips = [
           },
         ],
         expenses: [
-          { category: "交通", amount: 80, note: "租电动车", locationIdx: 0 },
-          { category: "餐饮", amount: 45, note: "喜洲粑粑和凉粉", locationIdx: 0 },
-          { category: "住宿", amount: 268, note: "古城客栈（第3晚）", locationIdx: null },
+          { category: "TRANSPORT", amount: 80, note: "租电动车", locationIdx: 0 },
+          { category: "FOOD", amount: 45, note: "喜洲粑粑和凉粉", locationIdx: 0 },
+          { category: "ACCOMMODATION", amount: 268, note: "古城客栈（第3晚）", locationIdx: null },
         ],
       },
       {
@@ -114,9 +115,9 @@ const trips = [
           },
         ],
         expenses: [
-          { category: "交通", amount: 34, note: "大理→丽江 动车", locationIdx: null },
-          { category: "住宿", amount: 320, note: "古城客栈（第4晚）", locationIdx: null },
-          { category: "餐饮", amount: 88, note: "丽江腊排骨火锅", locationIdx: 0 },
+          { category: "TRANSPORT", amount: 34, note: "大理→丽江 动车", locationIdx: null },
+          { category: "ACCOMMODATION", amount: 320, note: "古城客栈（第4晚）", locationIdx: null },
+          { category: "FOOD", amount: 88, note: "丽江腊排骨火锅", locationIdx: 0 },
         ],
       },
       {
@@ -140,9 +141,9 @@ const trips = [
           },
         ],
         expenses: [
-          { category: "门票", amount: 480, note: "玉龙雪山一日团（含索道）", locationIdx: 0 },
-          { category: "餐饮", amount: 35, note: "山上简餐", locationIdx: 0 },
-          { category: "住宿", amount: 320, note: "古城客栈（第5晚）", locationIdx: null },
+          { category: "TICKET", amount: 480, note: "玉龙雪山一日团（含索道）", locationIdx: 0 },
+          { category: "FOOD", amount: 35, note: "山上简餐", locationIdx: 0 },
+          { category: "ACCOMMODATION", amount: 320, note: "古城客栈（第5晚）", locationIdx: null },
         ],
       },
       {
@@ -161,9 +162,9 @@ const trips = [
           },
         ],
         expenses: [
-          { category: "交通", amount: 25, note: "打车去束河", locationIdx: 0 },
-          { category: "餐饮", amount: 62, note: "束河咖啡馆+小吃", locationIdx: 0 },
-          { category: "住宿", amount: 320, note: "古城客栈（第6晚）", locationIdx: null },
+          { category: "TRANSPORT", amount: 25, note: "打车去束河", locationIdx: 0 },
+          { category: "FOOD", amount: 62, note: "束河咖啡馆+小吃", locationIdx: 0 },
+          { category: "ACCOMMODATION", amount: 320, note: "古城客栈（第6晚）", locationIdx: null },
         ],
       },
       {
@@ -171,12 +172,13 @@ const trips = [
         date: "2026-07-07",
         note: "上午丽江直飞广州，云南之旅结束。",
         locations: [],
-        expenses: [{ category: "交通", amount: 920, note: "丽江→广州 机票", locationIdx: null }],
+        expenses: [{ category: "TRANSPORT", amount: 920, note: "丽江→广州 机票", locationIdx: null }],
       },
     ],
   },
   {
     title: "北京文化三日游",
+    status: "COMPLETED",
     description: "三月末的北京，故宫的杏花开了。把最经典的路线走了一遍，长城比想象中更震撼。",
     startDate: "2026-04-03",
     endDate: "2026-04-05",
@@ -211,11 +213,11 @@ const trips = [
           },
         ],
         expenses: [
-          { category: "交通", amount: 880, note: "广州→北京 高铁", locationIdx: null },
-          { category: "住宿", amount: 420, note: "前门附近酒店（第1晚）", locationIdx: null },
-          { category: "门票", amount: 60, note: "故宫门票", locationIdx: 1 },
-          { category: "餐饮", amount: 75, note: "故宫冰窖餐厅", locationIdx: 1 },
-          { category: "交通", amount: 12, note: "地铁 3 日卡", locationIdx: 0 },
+          { category: "TRANSPORT", amount: 880, note: "广州→北京 高铁", locationIdx: null },
+          { category: "ACCOMMODATION", amount: 420, note: "前门附近酒店（第1晚）", locationIdx: null },
+          { category: "TICKET", amount: 60, note: "故宫门票", locationIdx: 1 },
+          { category: "FOOD", amount: 75, note: "故宫冰窖餐厅", locationIdx: 1 },
+          { category: "TRANSPORT", amount: 12, note: "地铁 3 日卡", locationIdx: 0 },
         ],
       },
       {
@@ -243,10 +245,10 @@ const trips = [
           },
         ],
         expenses: [
-          { category: "门票", amount: 50, note: "颐和园联票", locationIdx: 0 },
-          { category: "门票", amount: 25, note: "圆明园门票", locationIdx: 1 },
-          { category: "餐饮", amount: 98, note: "烤鸭晚餐", locationIdx: 0 },
-          { category: "住宿", amount: 420, note: "前门附近酒店（第2晚）", locationIdx: null },
+          { category: "TICKET", amount: 50, note: "颐和园联票", locationIdx: 0 },
+          { category: "TICKET", amount: 25, note: "圆明园门票", locationIdx: 1 },
+          { category: "FOOD", amount: 98, note: "烤鸭晚餐", locationIdx: 0 },
+          { category: "ACCOMMODATION", amount: 420, note: "前门附近酒店（第2晚）", locationIdx: null },
         ],
       },
       {
@@ -270,19 +272,20 @@ const trips = [
           },
         ],
         expenses: [
-          { category: "交通", amount: 46, note: "北京北→八达岭 高铁往返", locationIdx: 0 },
-          { category: "门票", amount: 40, note: "八达岭长城门票", locationIdx: 0 },
-          { category: "餐饮", amount: 55, note: "长城脚下午餐", locationIdx: 0 },
-          { category: "交通", amount: 880, note: "北京→广州 高铁", locationIdx: null },
+          { category: "TRANSPORT", amount: 46, note: "北京北→八达岭 高铁往返", locationIdx: 0 },
+          { category: "TICKET", amount: 40, note: "八达岭长城门票", locationIdx: 0 },
+          { category: "FOOD", amount: 55, note: "长城脚下午餐", locationIdx: 0 },
+          { category: "TRANSPORT", amount: 880, note: "北京→广州 高铁", locationIdx: null },
         ],
       },
     ],
   },
   {
     title: "成都吃货之旅",
-    description: "十一假期专门为了吃去的成都。火锅、串串、兔头、冰粉，三天胖三斤，但真的快乐。",
-    startDate: "2026-10-01",
-    endDate: "2026-10-03",
+    status: "ONGOING",
+    description: "九月中旬错峰去的成都。火锅、串串、兔头、冰粉，三天胖三斤，但真的快乐。",
+    startDate: "2026-09-13",
+    endDate: "2026-09-16",
     days: [
       {
         title: "宽窄巷子-锦里",
@@ -309,10 +312,10 @@ const trips = [
           },
         ],
         expenses: [
-          { category: "交通", amount: 700, note: "广州→成都 机票", locationIdx: null },
-          { category: "住宿", amount: 350, note: "春熙路附近酒店（第1晚）", locationIdx: null },
-          { category: "餐饮", amount: 180, note: "网红火锅（排队2小时）", locationIdx: 1 },
-          { category: "购物", amount: 90, note: "宽窄巷子买的熊猫玩偶", locationIdx: 0 },
+          { category: "TRANSPORT", amount: 700, note: "广州→成都 机票", locationIdx: null },
+          { category: "ACCOMMODATION", amount: 350, note: "春熙路附近酒店（第1晚）", locationIdx: null },
+          { category: "FOOD", amount: 180, note: "网红火锅（排队2小时）", locationIdx: 1 },
+          { category: "SHOPPING", amount: 90, note: "宽窄巷子买的熊猫玩偶", locationIdx: 0 },
         ],
       },
       {
@@ -345,11 +348,11 @@ const trips = [
           },
         ],
         expenses: [
-          { category: "门票", amount: 55, note: "熊猫基地门票", locationIdx: 0 },
-          { category: "交通", amount: 30, note: "打车去熊猫基地", locationIdx: 0 },
-          { category: "餐饮", amount: 150, note: "太古里川菜馆", locationIdx: 1 },
-          { category: "购物", amount: 260, note: "太古里买的衣服", locationIdx: 1 },
-          { category: "住宿", amount: 350, note: "春熙路附近酒店（第2晚）", locationIdx: null },
+          { category: "TICKET", amount: 55, note: "熊猫基地门票", locationIdx: 0 },
+          { category: "TRANSPORT", amount: 30, note: "打车去熊猫基地", locationIdx: 0 },
+          { category: "FOOD", amount: 150, note: "太古里川菜馆", locationIdx: 1 },
+          { category: "SHOPPING", amount: 260, note: "太古里买的衣服", locationIdx: 1 },
+          { category: "ACCOMMODATION", amount: 350, note: "春熙路附近酒店（第2晚）", locationIdx: null },
         ],
       },
       {
@@ -368,14 +371,21 @@ const trips = [
           },
         ],
         expenses: [
-          { category: "餐饮", amount: 42, note: "鹤鸣茶社盖碗茶+采耳", locationIdx: 0 },
-          { category: "交通", amount: 700, note: "成都→广州 机票", locationIdx: null },
+          { category: "FOOD", amount: 42, note: "鹤鸣茶社盖碗茶+采耳", locationIdx: 0 },
+          { category: "TRANSPORT", amount: 700, note: "成都→广州 机票", locationIdx: null },
         ],
       },
     ],
   },
+  {
+    title: "2026 国庆 · 西安古城之旅",
+    description: "计划中：兵马俑、城墙、回民街，想去看一眼长安的秋天。",
+    startDate: "2026-10-01",
+    endDate: "2026-10-05",
+    status: "PLANNED",
+    days: [],
+  },
 ];
-
 async function main() {
   // 1. 确保演示用户存在
   let user = await prisma.user.findUnique({ where: { email: DEMO_EMAIL } });
@@ -398,6 +408,7 @@ async function main() {
         description: trip.description,
         startDate: new Date(`${trip.startDate}T00:00:00`),
         endDate: new Date(`${trip.endDate}T00:00:00`),
+        status: trip.status ?? "PLANNED",
       },
     });
 

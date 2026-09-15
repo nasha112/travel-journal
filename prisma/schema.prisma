@@ -24,6 +24,13 @@ model User {
   @@map("users")
 }
 
+// 旅行状态（生命周期状态机）
+enum TripStatus {
+  PLANNED   // 计划中
+  ONGOING   // 进行中
+  COMPLETED // 已完成
+}
+
 // 旅行表
 model Trip {
   id          Int       @id @default(autoincrement())
@@ -32,6 +39,7 @@ model Trip {
   cover       String?
   startDate   DateTime? @map("start_date")
   endDate     DateTime? @map("end_date")
+  status      TripStatus @default(PLANNED) // 计划中 / 进行中 / 已完成
   createdAt   DateTime  @default(now()) @map("created_at")
 
   userId Int  @map("user_id")
@@ -121,10 +129,20 @@ model BlogImage {
   @@map("blog_images")
 }
 
+// 消费分类（枚举，与应用层下拉一致）
+enum ExpenseCategory {
+  TRANSPORT     // 交通
+  ACCOMMODATION // 住宿
+  FOOD          // 餐饮
+  TICKET        // 门票
+  SHOPPING      // 购物
+  OTHER         // 其他
+}
+
 // 消费记录表
 model Expense {
   id       Int      @id @default(autoincrement())
-  category String // 消费分类：交通/住宿/餐饮/门票/购物/其他
+  category ExpenseCategory // 消费分类（枚举）
   amount   Decimal  @db.Decimal(10, 2)
   note     String?
   date     DateTime?

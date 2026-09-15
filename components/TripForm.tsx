@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { TRIP_STATUSES, TRIP_STATUS_LABELS, inferTripStatus } from "@/lib/utils";
 
 export type TripFormData = {
   id?: number;
@@ -10,6 +11,7 @@ export type TripFormData = {
   startDate: string | null;
   endDate: string | null;
   cover: string | null;
+  status?: string;
 };
 
 export default function TripForm({ trip }: { trip?: TripFormData }) {
@@ -22,12 +24,22 @@ export default function TripForm({ trip }: { trip?: TripFormData }) {
     startDate: trip?.startDate ? trip.startDate.slice(0, 10) : "",
     endDate: trip?.endDate ? trip.endDate.slice(0, 10) : "",
     cover: trip?.cover ?? "",
+    status: trip?.status ?? "PLANNED",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   function update<K extends keyof typeof form>(key: K, value: string) {
     setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  /** 修改日期时按起止日期自动推断旅行状态（仍可手动修改） */
+  function updateDate(key: "startDate" | "endDate", value: string) {
+    setForm((f) => {
+      const next = { ...f, [key]: value };
+      next.status = inferTripStatus(next.startDate, next.endDate);
+      return next;
+    });
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -53,6 +65,7 @@ export default function TripForm({ trip }: { trip?: TripFormData }) {
           startDate: form.startDate || null,
           endDate: form.endDate || null,
           cover: form.cover || null,
+          status: form.status,
         }),
       });
       const data = await res.json();
@@ -108,7 +121,7 @@ export default function TripForm({ trip }: { trip?: TripFormData }) {
                 type="date"
                 className={inputCls}
                 value={form.startDate}
-                onChange={(e) => update("startDate", e.target.value)}
+                onChange={(e) => updateDate("startDate", e.target.value)}
               />
             </div>
             <div>
@@ -117,9 +130,27 @@ export default function TripForm({ trip }: { trip?: TripFormData }) {
                 type="date"
                 className={inputCls}
                 value={form.endDate}
-                onChange={(e) => update("endDate", e.target.value)}
+                onChange={(e) => updateDate("endDate", e.target.value)}
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">旅行状态</label>
+            <select
+              className={inputCls}
+              value={form.status}
+              onChange={(e) => update("status", e.target.value)}
+            >
+              {TRIP_STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {TRIP_STATUS_LABELS[s]}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-400 mt-1">
+              已按起止日期自动判断，可手动修改（计划中 / 进行中 / 已完成）
+            </p>
           </div>
 
           <div>

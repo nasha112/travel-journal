@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
-import { EXPENSE_CATEGORIES, formatDateTime, formatMoney } from "@/lib/utils";
+import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABELS, expenseCategoryLabel, formatDateTime, formatMoney } from "@/lib/utils";
 
 export type ExpenseItem = {
   id: number;
@@ -21,12 +21,12 @@ export type ExpenseDayOption = { id: number; dayNumber: number; title: string | 
 export type ExpenseLocationGroup = { dayId: number; dayNumber: number; list: { id: number; name: string }[] };
 
 const CATEGORY_COLORS: Record<string, string> = {
-  交通: "#3b82f6",
-  住宿: "#8b5cf6",
-  餐饮: "#f59e0b",
-  门票: "#10b981",
-  购物: "#ec4899",
-  其他: "#6b7280",
+  TRANSPORT: "#3b82f6",
+  ACCOMMODATION: "#8b5cf6",
+  FOOD: "#f59e0b",
+  TICKET: "#10b981",
+  SHOPPING: "#ec4899",
+  OTHER: "#6b7280",
 };
 
 export default function ExpensePage({
@@ -46,7 +46,7 @@ export default function ExpensePage({
   const [expenses, setExpenses] = useState<ExpenseItem[]>(initialExpenses);
 
   const [form, setForm] = useState({
-    category: "交通",
+    category: "TRANSPORT",
     amount: "",
     date: "",
     tripDayId: "",
@@ -99,7 +99,7 @@ export default function ExpensePage({
   const stats = useMemo(() => {
     const total = expenses.reduce((s, e) => s + Number(e.amount), 0);
     const byCategory = EXPENSE_CATEGORIES.map((c) => ({
-      name: c,
+      name: EXPENSE_CATEGORY_LABELS[c],
       value: expenses.filter((e) => e.category === c).reduce((s, e) => s + Number(e.amount), 0),
     })).filter((c) => c.value > 0);
     return { total, count: expenses.length, byCategory };
@@ -259,7 +259,7 @@ export default function ExpensePage({
                 >
                   {EXPENSE_CATEGORIES.map((c) => (
                     <option key={c} value={c}>
-                      {c}
+                      {EXPENSE_CATEGORY_LABELS[c]}
                     </option>
                   ))}
                 </select>
@@ -376,7 +376,7 @@ export default function ExpensePage({
                 />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium text-gray-800">
-                    {e.category}
+                    {expenseCategoryLabel(e.category)}
                     {e.location && (
                       <span className="text-gray-400 font-normal"> · {e.location.name}</span>
                     )}

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import TripFilter from "@/components/TripFilter";
+import TripStatusBadge from "@/components/TripStatusBadge";
 
 export const dynamic = "force-dynamic";
 
@@ -63,7 +64,14 @@ export default async function TripsPage({
           }
         : {}),
     },
-    include: {
+    select: {
+      id: true,
+      title: true,
+      cover: true,
+      description: true,
+      startDate: true,
+      endDate: true,
+      status: true,
       days: { select: { _count: { select: { locations: true } } } },
       expenses: { select: { amount: true } },
     },
@@ -120,7 +128,10 @@ export default async function TripsPage({
                   )}
                 </div>
                 <div className="p-4">
-                  <div className="font-semibold text-gray-800 truncate">{trip.title}</div>
+                  <div className="flex items-center gap-2">
+                    <div className="font-semibold text-gray-800 truncate">{trip.title}</div>
+                    <TripStatusBadge status={trip.status} />
+                  </div>
                   <div className="text-xs text-gray-500 mt-1">
                     {formatDate(trip.startDate)} ~ {formatDate(trip.endDate)}
                   </div>

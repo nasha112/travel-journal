@@ -58,7 +58,54 @@ export function formatMoney(n: number): string {
   return `¥${n.toLocaleString("zh-CN", { maximumFractionDigits: 2 })}`;
 }
 
-/** 消费分类中文名 */
-export const EXPENSE_CATEGORIES = ["交通", "住宿", "餐饮", "门票", "购物", "其他"] as const;
+// 消费分类（与 prisma/schema.prisma 中 ExpenseCategory 枚举对应）
+export const EXPENSE_CATEGORIES = [
+  "TRANSPORT",
+  "ACCOMMODATION",
+  "FOOD",
+  "TICKET",
+  "SHOPPING",
+  "OTHER",
+] as const;
 
-export type ExpenseCategory = (typeof EXPENSE_CATEGORIES)[number];
+export const EXPENSE_CATEGORY_LABELS: Record<string, string> = {
+  TRANSPORT: "交通",
+  ACCOMMODATION: "住宿",
+  FOOD: "餐饮",
+  TICKET: "门票",
+  SHOPPING: "购物",
+  OTHER: "其他",
+};
+
+/** 消费分类枚举 → 中文标签 */
+export function expenseCategoryLabel(c: string | null | undefined): string {
+  return c ? EXPENSE_CATEGORY_LABELS[c] ?? c : "";
+}
+
+// 旅行状态（与 prisma/schema.prisma 中 TripStatus 枚举对应）
+export const TRIP_STATUSES = ["PLANNED", "ONGOING", "COMPLETED"] as const;
+
+export const TRIP_STATUS_LABELS: Record<string, string> = {
+  PLANNED: "计划中",
+  ONGOING: "进行中",
+  COMPLETED: "已完成",
+};
+
+/** 旅行状态枚举 → 中文标签 */
+export function tripStatusLabel(s: string | null | undefined): string {
+  return s ? TRIP_STATUS_LABELS[s] ?? s : "";
+}
+
+/** 根据起止日期推断旅行状态（供表单默认值 / seed 使用） */
+export function inferTripStatus(
+  startDate: string | Date | null | undefined,
+  endDate: string | Date | null | undefined,
+  now = new Date()
+): "PLANNED" | "ONGOING" | "COMPLETED" {
+  const start = startDate ? new Date(startDate) : null;
+  const end = endDate ? new Date(endDate) : null;
+  if (end && end.getTime() < now.getTime()) return "COMPLETED";
+  if (start && end && start.getTime() <= now.getTime() && now.getTime() <= end.getTime())
+    return "ONGOING";
+  return "PLANNED";
+}

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
 import { validateExpenseInput } from "@/lib/validate";
+import type { ExpenseCategory } from "@prisma/client";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -47,23 +48,27 @@ export async function POST(request: Request, { params }: Params) {
       if (!day) return NextResponse.json({ error: "旅行日不存在" }, { status: 400 });
     }
 
-    // 校验地点归属：必须属于该趟旅行的某个旅行日
+    // 跨层级关联一致性校验：
+    // 地点必须属于该趟旅行的某个旅行日；若同时指定旅行日，地点必须属于该旅行日；
+    // 若未指定旅行日，则自动继承地点的所属旅行日，杜绝交叉归属（trip/tripDay/location 互相矛盾）。
+    let effectiveDayId = tripDayId != null ? Number(tripDayId) : null;
     if (locationId != null) {
       const loc = await prisma.location.findFirst({
-        where: {
-          id: Number(locationId),
-          tripDay: { tripId: trip.id },
-        },
+        where: { id: Number(locationId), tripDay: { tripId: trip.id } },
       });
       if (!loc) return NextResponse.json({ error: "地点不存在或不属于该旅行" }, { status: 400 });
+      if (effectiveDayId != null && loc.tripDayId !== effectiveDayId) {
+        return NextResponse.json({ error: "所选地点不属于该旅行日" }, { status: 400 });
+      }
+      if (effectiveDayId == null) effectiveDayId = loc.tripDayId;
     }
 
     const expense = await prisma.expense.create({
       data: {
         tripId: trip.id,
-        tripDayId: tripDayId ? Number(tripDayId) : null,
-        locationId: locationId ? Number(locationId) : null,
-        category: category as string,
+        tripDayId: effectiveDayId,
+        locationId: locationId != null ? Number(locationId) : null,
+        category: category as ExpenseCategory,
         amount: Number(amount),
         note: note || null,
         date: new Date(date as string),

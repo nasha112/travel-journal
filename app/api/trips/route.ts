@@ -47,7 +47,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const check = validateTripInput(body);
     if (!check.ok) return NextResponse.json({ error: check.error }, { status: 400 });
-    const { title, description, startDate, endDate, cover } = body;
+    const { title, description, startDate, endDate, cover, status } = body;
 
     const trip = await prisma.trip.create({
       data: {
@@ -56,6 +56,7 @@ export async function POST(request: Request) {
         startDate: startDate ? new Date(startDate as string) : null,
         endDate: endDate ? new Date(endDate as string) : null,
         cover: cover || null,
+        status: (status as "PLANNED" | "ONGOING" | "COMPLETED") || "PLANNED",
         userId,
       },
     });

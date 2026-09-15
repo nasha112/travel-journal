@@ -24,6 +24,7 @@ export default async function EditTripPage({ params }: { params: Promise<{ id: s
         startDate: trip.startDate ? trip.startDate.toISOString() : null,
         endDate: trip.endDate ? trip.endDate.toISOString() : null,
         cover: trip.cover,
+        status: trip.status,
       }}
     />
   );

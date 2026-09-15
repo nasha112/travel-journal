@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
+import { expenseCategoryLabel } from "@/lib/utils";
 import AnalyticsCharts from "@/components/AnalyticsCharts";
 
 export const dynamic = "force-dynamic";
@@ -86,7 +87,7 @@ export default async function AnalyticsPage() {
     }
   }
   const categoryData = Array.from(categoryMap.entries())
-    .map(([category, value]) => ({ category, value: Math.round(value) }))
+    .map(([category, value]) => ({ category: expenseCategoryLabel(category), value: Math.round(value) }))
     .sort((a, b) => b.value - a.value);
 
   // 月度消费趋势

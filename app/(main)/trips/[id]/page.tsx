@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import TripActions from "@/components/TripActions";
 import DeleteDayButton from "@/components/DeleteDayButton";
+import TripStatusBadge from "@/components/TripStatusBadge";
 import { formatDate, formatMoney } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -41,6 +42,7 @@ export default async function TripDetailPage({ params }: { params: Promise<{ id:
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-2xl font-bold text-gray-800">{trip.title}</h1>
+              <TripStatusBadge status={trip.status} />
               <Link
                 href={`/trips/${trip.id}/map`}
                 className="text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-1 rounded-full hover:bg-blue-100 transition-colors"

@@ -61,6 +61,7 @@ User
 | cover | VARCHAR(191) | NULL | 封面图地址 |
 | start_date | DATETIME | NULL | 开始日期 |
 | end_date | DATETIME | NULL | 结束日期 |
+| status | ENUM | NOT NULL, DEFAULT 'PLANNED' | 旅行状态（计划中/进行中/已完成，见 3.6） |
 | created_at | DATETIME | NOT NULL | 创建时间 |
 | user_id | INT | FK → users.id, ON DELETE CASCADE | 所属用户 |
 
@@ -125,12 +126,46 @@ User
 
 > 使用数据库枚举而非自由字符串，保证筛选统计时的数据口径一致。
 
-### 3.7 expenses（消费记录表）
+### 3.7 旅行状态枚举（TripStatus）
+
+为描述旅行生命周期，系统将旅行划分为三种状态：
+
+| 枚举值 | 中文含义 | 说明 |
+|---|---|---|
+| PLANNED | 计划中 | 尚未开始 |
+| ONGOING | 进行中 | 起止日期覆盖当前时间 |
+| COMPLETED | 已完成 | 已结束 |
+
+> 表单按起止日期自动推断状态，同时允许手动修改，形成"状态机 + 日期校验"的旅行生命周期管理。
+
+### 3.8 消费分类枚举（ExpenseCategory）
+
+| 枚举值 | 中文含义 |
+|---|---|
+| TRANSPORT | 交通 |
+| ACCOMMODATION | 住宿 |
+| FOOD | 餐饮 |
+| TICKET | 门票 |
+| SHOPPING | 购物 |
+| OTHER | 其他 |
+
+> 与地点类型枚举一起构成系统两级统一约束（LocationType / ExpenseCategory）。
+
+### 3.9 跨层级关联一致性
+
+消费记录同时关联 trip / trip_day / location 三层，理论上存在"交叉归属"风险（如消费属于 A 旅行、却挂在 B 旅行的旅行日上）。系统在**创建与编辑接口**做双重约束：
+
+1. **归属校验**：trip_day、location 必须属于该趟旅行；
+2. **一致性校验**：同时指定旅行日与地点时，地点必须属于该旅行日（`location.trip_day_id === trip_day_id`）；只指定地点时，自动继承地点的所属旅行日。
+
+由此保证任何消费记录的 trip → trip_day → location 三层始终在同一棵归属树内。
+
+### 3.10 expenses（消费记录表）
 
 | 字段 | 类型 | 约束 | 说明 |
 |---|---|---|---|
 | id | INT | PK, AUTO_INCREMENT | 消费 ID |
-| category | VARCHAR(191) | NOT NULL | 分类：交通/住宿/餐饮/门票/购物/其他（应用层枚举） |
+| category | ENUM | NOT NULL | 分类枚举（见 3.8，数据库层约束） |
 | amount | DECIMAL(10,2) | NOT NULL | 金额（后端校验 > 0 且 ≤ 1000 万） |
 | note | VARCHAR(191) | NULL | 备注 |
 | date | DATETIME | NULL | 消费时间（精确到分钟，24 小时制） |
@@ -174,3 +209,4 @@ User
 | 20260914160353_blog_many_per_location | 游记与地点改为 1:N（一地多篇） |
 | 20260915123000_location_type_enum | 地点类型 String → Enum（存量中文值映射） |
 | 20260915150000_add_indexes | 增加 4 个查询索引 |
+| 20260915160000_trip_status_expense_enum | 旅行状态机（TripStatus）+ 消费分类 Enum（存量映射+按日期回填状态） |

@@ -52,7 +52,17 @@ export async function PUT(request: Request, { params }: Params) {
           where: { id: Number(locationId), tripDay: { tripId: expense.tripId } },
         });
         if (!loc) return NextResponse.json({ error: "地点不存在或不属于该旅行" }, { status: 400 });
+        // 跨层级一致性：同时指定旅行日时，地点必须属于该旅行日
+        const dayId =
+          tripDayId != null ? Number(tripDayId) : (data.tripDayId ?? expense.tripDayId);
+        if (dayId != null && loc.tripDayId !== dayId) {
+          return NextResponse.json({ error: "所选地点不属于该旅行日" }, { status: 400 });
+        }
         data.locationId = loc.id;
+        // 地点变更时自动同步其所属旅行日，防止交叉归属
+        if (tripDayId === undefined || tripDayId == null) {
+          data.tripDayId = loc.tripDayId;
+        }
       }
     }
 

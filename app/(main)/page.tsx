@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import TripMap from "@/components/ClientTripMap";
 import HomeFilter from "@/components/HomeFilter";
+import TripStatusBadge from "@/components/TripStatusBadge";
 import type { MapPoint } from "@/components/TripMap";
 import type { LocationType } from "@prisma/client";
 
@@ -90,6 +91,7 @@ export default async function HomePage({
         description: true,
         startDate: true,
         endDate: true,
+        status: true,
         days: { select: { _count: { select: { locations: true } } } },
         expenses: { select: { amount: true } },
       },
@@ -97,7 +99,6 @@ export default async function HomePage({
       take: 6,
     }),
   ]);
-
   // 汇总统计（基于地图查询结果）
   const totalLocations = mapTrips.reduce(
     (sum, t) => sum + t.days.reduce((s, d) => s + d.locations.length, 0),
@@ -233,7 +234,10 @@ export default async function HomePage({
                     )}
                   </div>
                   <div className="p-4">
-                    <div className="font-semibold text-gray-800 truncate">{trip.title}</div>
+                    <div className="flex items-center gap-2">
+                      <div className="font-semibold text-gray-800 truncate">{trip.title}</div>
+                      <TripStatusBadge status={trip.status} />
+                    </div>
                     <div className="text-xs text-gray-500 mt-1">
                       {formatDate(trip.startDate)} ~ {formatDate(trip.endDate)}
                     </div>
