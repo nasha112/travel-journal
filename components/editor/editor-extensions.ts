@@ -7,6 +7,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { Markdown } from "@tiptap/markdown";
 import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
+import Placeholder from "@tiptap/extension-placeholder";
 import { ReactNodeViewRenderer } from "@tiptap/react";
 import ImageNodeView from "./EditorImage";
 
@@ -29,5 +30,8 @@ export const editorExtensions = [
     autolink: true,
     linkOnPaste: true,
     HTMLAttributes: { class: "text-blue-600 underline" },
+  }),
+  Placeholder.configure({
+    placeholder: "开始写点什么…（输入 / 打开插入菜单）",
   }),
 ];

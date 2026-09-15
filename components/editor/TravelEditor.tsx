@@ -82,6 +82,8 @@ const TravelEditor = forwardRef<TravelEditorHandle, TravelEditorProps>(function 
       onChange?.(editor.getMarkdown());
     },
     editorProps: {
+      // 与阅读页共用同一套 Typography（所见即所得）
+      attributes: { class: "markdown-content" },
       handleKeyDown: (_view, event) => {
         const s = slashRef.current;
         if (!s) return false;
