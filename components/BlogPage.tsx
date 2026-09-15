@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import ImageUploader from "@/components/ImageUploader";
 import MarkdownView from "@/components/MarkdownView";
+import MarkdownEditor, { type MarkdownEditorHandle } from "@/components/MarkdownEditor";
 import { locationTypeLabel } from "@/lib/utils";
 
 export type BlogLocationData = {
@@ -49,29 +50,7 @@ export default function BlogPage({ data }: { data: BlogInitialData }) {
   const [saving, setSaving] = useState(false);
 
   const activeBlog = blogs.find((b) => b.id === activeId) ?? null;
-  const contentRef = useRef<HTMLTextAreaElement>(null);
-
-  /** 把已上传图片以 Markdown 语法插入正文光标处（图文对应） */
-  function insertImageAtCursor(url: string) {
-    const ta = contentRef.current;
-    const pos = ta?.selectionStart ?? content.length;
-    const markdown = `![图片]( ${url} )`;
-    // 确保插入内容独立成段：前后补换行
-    const before = content.slice(0, pos);
-    const after = content.slice(ta?.selectionEnd ?? pos);
-    const prefix = before === "" || before.endsWith("\n") ? "" : "\n";
-    const suffix = after === "" || after.startsWith("\n") ? "" : "\n";
-    const next = `${before}${prefix}${markdown}${suffix}${after}`;
-    setContent(next);
-    // 光标移到插入内容之后
-    requestAnimationFrame(() => {
-      if (ta) {
-        ta.focus();
-        const caret = pos + prefix.length + markdown.length;
-        ta.setSelectionRange(caret, caret);
-      }
-    });
-  }
+  const editorRef = useRef<MarkdownEditorHandle>(null);
 
   /** 进入编辑模式：新建或编辑某篇 */
   function startEdit(blog: BlogItemData | null) {
@@ -338,21 +317,24 @@ export default function BlogPage({ data }: { data: BlogInitialData }) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">游记正文（支持 Markdown）</label>
-            <textarea
-              ref={contentRef}
-              className={`${inputCls} min-h-64 resize-y font-mono`}
+            <label className="block text-sm font-medium text-gray-700 mb-1">游记正文（支持 Markdown，右侧实时预览）</label>
+            <MarkdownEditor
+              ref={editorRef}
               value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder={"# 写下你的旅行故事\n\n支持 **加粗**、列表、链接等 Markdown 语法，上传图片后可在图片上点「插入正文」把图片嵌到对应段落..."}
+              onChange={setContent}
+              placeholder={"# 写下你的旅行故事\n\n用上方工具栏一键插入标题、加粗、列表等格式..."}
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">游记图片</label>
-            <ImageUploader images={images} onChange={setImages} onInsert={insertImageAtCursor} />
+            <ImageUploader
+              images={images}
+              onChange={setImages}
+              onInsert={(url) => editorRef.current?.insertImage(url)}
+            />
             <p className="text-xs text-gray-400 mt-1.5">
-              上传后把鼠标移到图片上点「插入正文」，即可把图片嵌到正文光标所在位置
+              上传后把鼠标移到图片上点「插入正文」，图片会插入到编辑区光标处，并在右侧预览直接显示
             </p>
           </div>
 
