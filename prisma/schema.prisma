@@ -60,6 +60,19 @@ model TripDay {
   @@map("trip_days")
 }
 
+// 地点类型（枚举，避免自由字符串造成数据混乱）
+enum LocationType {
+  ATTRACTION // 景点
+  RESTAURANT // 美食
+  HOTEL      // 住宿
+  SHOPPING   // 购物
+  STATION    // 车站
+  AIRPORT    // 机场
+  PARK       // 公园
+  MUSEUM     // 博物馆
+  OTHER      // 其他
+}
+
 // 地点表：每个旅行日下可有多个打卡地点
 model Location {
   id    Int    @id @default(autoincrement())
@@ -68,7 +81,7 @@ model Location {
   city   String?
   lat    Float // 纬度
   lng    Float // 经度
-  type   String? // 地点类型：景点/美食/住宿/其他
+  type   LocationType? // 地点类型
   note   String? @db.Text
 
   tripDayId Int @map("trip_day_id")

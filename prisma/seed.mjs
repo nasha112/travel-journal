@@ -28,13 +28,20 @@ const trips = [
             city: "昆明",
             lat: 24.9507,
             lng: 102.6999,
-            type: "景点",
+            type: "ATTRACTION",
             note: "傍晚的红嘴鸥很多，风大记得带外套",
-            blog: {
-              title: "在滇池边等一场日落",
-              content:
-                "## 海埂大坝的傍晚\n\n下飞机的第一站就是滇池。**海埂大坝的风很大**，但是红嘴鸥真的很多，买了两包鸥粮，它们一点都不怕人。\n\n> 夕阳把水面染成金色的时候，觉得这趟旅行值了。\n\n晚上在附近吃了正宗的**过桥米线**，汤底很鲜。",
-            },
+            blogs: [
+              {
+                title: "在滇池边等一场日落",
+                content:
+                  "## 海埂大坝的傍晚\n\n下飞机的第一站就是滇池。**海埂大坝的风很大**，但是红嘴鸥真的很多，买了两包鸥粮，它们一点都不怕人。\n\n> 夕阳把水面染成金色的时候，觉得这趟旅行值了。\n\n晚上在附近吃了正宗的**过桥米线**，汤底很鲜。",
+              },
+              {
+                title: "红嘴鸥的清晨，滇池的另一面",
+                content:
+                  "## 清晨的滇池\n\n第二天一早又去了一次大坝，和傍晚完全不同。\n\n- **7:00** 到的时候雾还没散，湖面像盖了一层纱\n- 红嘴鸥在晨光里特别白，抢食也特别凶\n- 买了一瓶鸥粮，它们会落在手上啄\n\n> 建议清晨来一次、傍晚来一次，两个滇池都值得。",
+              },
+            ],
           },
         ],
         expenses: [
@@ -54,7 +61,7 @@ const trips = [
             city: "大理",
             lat: 25.6926,
             lng: 100.1585,
-            type: "景点",
+            type: "ATTRACTION",
             note: "夜晚的古城比白天更有味道",
           },
         ],
@@ -76,7 +83,7 @@ const trips = [
             city: "大理",
             lat: 25.7986,
             lng: 100.2115,
-            type: "景点",
+            type: "ATTRACTION",
             note: "环湖路上随手一拍都是屏保",
           },
         ],
@@ -97,7 +104,7 @@ const trips = [
             city: "丽江",
             lat: 26.8731,
             lng: 100.2308,
-            type: "景点",
+            type: "ATTRACTION",
             note: "晚上酒吧街太吵，喜欢安静可以去狮子山看夜景",
             blog: {
               title: "丽江古城的一夜",
@@ -123,7 +130,7 @@ const trips = [
             city: "丽江",
             lat: 27.1,
             lng: 100.18,
-            type: "景点",
+            type: "ATTRACTION",
             note: "一定要提前买氧气瓶",
             blog: {
               title: "登顶玉龙雪山 4506 米",
@@ -149,7 +156,7 @@ const trips = [
             city: "丽江",
             lat: 26.9,
             lng: 100.22,
-            type: "景点",
+            type: "ATTRACTION",
             note: "比大研安静，适合发呆",
           },
         ],
@@ -185,7 +192,7 @@ const trips = [
             city: "北京",
             lat: 39.9087,
             lng: 116.3975,
-            type: "景点",
+            type: "ATTRACTION",
             note: "看升旗要提前一小时去排队",
           },
           {
@@ -194,7 +201,7 @@ const trips = [
             city: "北京",
             lat: 39.9163,
             lng: 116.3972,
-            type: "景点",
+            type: "ATTRACTION",
             note: "门票要提前预约",
             blog: {
               title: "故宫的杏花与红墙",
@@ -222,7 +229,7 @@ const trips = [
             city: "北京",
             lat: 39.9998,
             lng: 116.2755,
-            type: "景点",
+            type: "ATTRACTION",
             note: "昆明湖划船很惬意",
           },
           {
@@ -231,7 +238,7 @@ const trips = [
             city: "北京",
             lat: 40.0082,
             lng: 116.2999,
-            type: "景点",
+            type: "ATTRACTION",
             note: "西洋楼遗址很震撼",
           },
         ],
@@ -253,7 +260,7 @@ const trips = [
             city: "北京",
             lat: 40.3542,
             lng: 116.0126,
-            type: "景点",
+            type: "ATTRACTION",
             note: "北线比南线陡，风景也更好",
             blog: {
               title: "不到长城非好汉",
@@ -288,7 +295,7 @@ const trips = [
             city: "成都",
             lat: 30.6698,
             lng: 104.0571,
-            type: "景点",
+            type: "ATTRACTION",
             note: "商业化比较重，但第一次来还是值得逛",
           },
           {
@@ -297,7 +304,7 @@ const trips = [
             city: "成都",
             lat: 30.6386,
             lng: 104.047,
-            type: "景点",
+            type: "ATTRACTION",
             note: "晚上的红灯笼很好看",
           },
         ],
@@ -319,7 +326,7 @@ const trips = [
             city: "成都",
             lat: 30.7353,
             lng: 104.1444,
-            type: "景点",
+            type: "ATTRACTION",
             note: "一定要早去！晚了熊猫就睡了",
             blog: {
               title: "看熊猫吃竹子看到发呆",
@@ -333,7 +340,7 @@ const trips = [
             city: "成都",
             lat: 30.6551,
             lng: 104.0809,
-            type: "购物",
+            type: "SHOPPING",
             note: "网红熊猫爬墙雕塑在 IFS",
           },
         ],
@@ -356,7 +363,7 @@ const trips = [
             city: "成都",
             lat: 30.6543,
             lng: 104.0523,
-            type: "景点",
+            type: "ATTRACTION",
             note: "鹤鸣茶社一碗盖碗茶 20 块，能坐一下午",
           },
         ],
@@ -423,10 +430,11 @@ async function main() {
         });
         locationIds.push(l.id);
 
-        // 游记
-        if (loc.blog) {
+        // 游记（一个地点可有多篇）
+        const blogList = loc.blog ? [loc.blog] : loc.blogs ?? [];
+        for (const b of blogList) {
           await prisma.blog.create({
-            data: { locationId: l.id, title: loc.blog.title, content: loc.blog.content },
+            data: { locationId: l.id, title: b.title, content: b.content },
           });
         }
       }

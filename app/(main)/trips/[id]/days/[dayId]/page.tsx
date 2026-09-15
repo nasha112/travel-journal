@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import LocationForm from "@/components/LocationForm";
 import DeleteLocationButton from "@/components/DeleteLocationButton";
-import { formatDate } from "@/lib/utils";
+import { formatDate, locationTypeLabel } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -76,7 +76,7 @@ export default async function DayDetailPage({
                   </div>
                   {loc.type && (
                     <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full shrink-0">
-                      {loc.type}
+                      {locationTypeLabel(loc.type)}
                     </span>
                   )}
                 </div>

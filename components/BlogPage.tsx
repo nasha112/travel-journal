@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import ImageUploader from "@/components/ImageUploader";
 import MarkdownView from "@/components/MarkdownView";
+import { locationTypeLabel } from "@/lib/utils";
 
 export type BlogLocationData = {
   id: number;
@@ -131,7 +132,7 @@ export default function BlogPage({ data }: { data: BlogInitialData }) {
             <h1 className="text-xl font-bold text-gray-800">{location.name}</h1>
             {location.type && (
               <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                {location.type}
+                {locationTypeLabel(location.type)}
               </span>
             )}
           </div>

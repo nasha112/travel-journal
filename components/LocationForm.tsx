@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import { LOCATION_TYPES, LOCATION_TYPE_LABELS } from "@/lib/utils";
 
 // Leaflet 只能在浏览器端运行，SSR 时跳过
 const LocationPicker = dynamic(() => import("@/components/LocationPicker"), { ssr: false });
@@ -89,12 +90,11 @@ export default function LocationForm({ dayId }: { dayId: number }) {
               onChange={(e) => update("type", e.target.value)}
             >
               <option value="">选择类型</option>
-              <option value="景点">景点</option>
-              <option value="美食">美食</option>
-              <option value="住宿">住宿</option>
-              <option value="交通">交通</option>
-              <option value="购物">购物</option>
-              <option value="其他">其他</option>
+              {LOCATION_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {LOCATION_TYPE_LABELS[t]}
+                </option>
+              ))}
             </select>
           </div>
           <div>

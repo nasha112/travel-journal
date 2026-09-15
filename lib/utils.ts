@@ -3,6 +3,37 @@
  * Prisma 对 MySQL DATETIME 写入时转成 UTC 字面、读取时按 UTC 解析，
  * 因此用本地时区取值可还原原始时刻（+8 时区下日期一致）。
  */
+
+// 地点类型（与 prisma/schema.prisma 中 LocationType 枚举对应）
+export const LOCATION_TYPES = [
+  "ATTRACTION",
+  "RESTAURANT",
+  "HOTEL",
+  "SHOPPING",
+  "STATION",
+  "AIRPORT",
+  "PARK",
+  "MUSEUM",
+  "OTHER",
+] as const;
+
+export const LOCATION_TYPE_LABELS: Record<string, string> = {
+  ATTRACTION: "景点",
+  RESTAURANT: "美食",
+  HOTEL: "住宿",
+  SHOPPING: "购物",
+  STATION: "车站",
+  AIRPORT: "机场",
+  PARK: "公园",
+  MUSEUM: "博物馆",
+  OTHER: "其他",
+};
+
+/** 地点类型枚举 → 中文标签 */
+export function locationTypeLabel(t: string | null | undefined): string {
+  return t ? LOCATION_TYPE_LABELS[t] ?? t : "";
+}
+
 export function formatDate(d: Date | string | null | undefined): string {
   if (!d) return "—";
   const date = typeof d === "string" ? new Date(d) : d;
