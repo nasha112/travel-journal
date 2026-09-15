@@ -23,6 +23,9 @@ export default async function MainLayout({ children }: { children: React.ReactNo
               <Link href="/trips" className="text-gray-600 hover:text-blue-600 transition-colors">
                 我的旅行
               </Link>
+              <Link href="/analytics" className="text-gray-600 hover:text-blue-600 transition-colors">
+                数据分析
+              </Link>
             </nav>
           </div>
           <UserMenu name={user.name} />
