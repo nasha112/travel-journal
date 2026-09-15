@@ -2,9 +2,12 @@ import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { prisma } from "./prisma";
 
-const secret = new TextEncoder().encode(
-  process.env.AUTH_SECRET || "travel-journal-dev-secret-2026"
-);
+// 生产环境必须显式配置 AUTH_SECRET，否则拒绝启动（防止使用默认密钥）
+const secretStr = process.env.AUTH_SECRET;
+if (process.env.NODE_ENV === "production" && !secretStr) {
+  throw new Error("生产环境必须配置 AUTH_SECRET 环境变量，禁止使用默认密钥");
+}
+const secret = new TextEncoder().encode(secretStr || "travel-journal-dev-secret-2026");
 
 /** 签发 JWT 登录令牌 */
 export async function signToken(userId: number) {

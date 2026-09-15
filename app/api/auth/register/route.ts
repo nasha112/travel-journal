@@ -15,8 +15,11 @@ export async function POST(request: Request) {
     if (!emailRegex.test(email)) {
       return NextResponse.json({ error: "邮箱格式不正确" }, { status: 400 });
     }
-    if (password.length < 6) {
-      return NextResponse.json({ error: "密码长度至少 6 位" }, { status: 400 });
+    if (password.length < 6 || password.length > 72) {
+      return NextResponse.json({ error: "密码长度需在 6-72 位之间" }, { status: 400 });
+    }
+    if (name.trim().length > 50) {
+      return NextResponse.json({ error: "昵称不能超过 50 个字符" }, { status: 400 });
     }
 
     const exists = await prisma.user.findUnique({ where: { email } });
@@ -35,6 +38,7 @@ export async function POST(request: Request) {
     store.set("token", token, {
       httpOnly: true,
       sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
       path: "/",
       maxAge: 60 * 60 * 24 * 7,
     });
