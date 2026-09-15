@@ -8,12 +8,15 @@
 
 | 模块 | 功能 |
 | ---- | ---- |
-| 用户账号 | 注册 / 登录 / 退出，JWT 会话，页面级登录保护 |
-| 旅行管理 | 创建 / 编辑 / 删除旅行，封面、简介、起止日期 |
+| 用户账号 | 注册 / 登录 / 退出，JWT 会话，httpOnly Cookie（生产环境 Secure），页面级登录保护 |
+| 旅行管理 | 创建 / 编辑 / 删除旅行，封面、简介、起止日期（结束不得早于开始） |
 | 行程时间轴 | 按旅行日组织行程，Day 1 / Day 2 ... 时间轴展示，旅行日可编辑 / 删除 |
-| 地点与地图 | 打卡地点 + 经纬度，地图选点录入，Leaflet/OpenStreetMap 渲染，行程路线连线 + 方向箭头，点位按游玩顺序编号，有游记 / 无游记点位区分 |
+| 地点与地图 | 打卡地点 + 经纬度，地图选点录入，Leaflet/OpenStreetMap 渲染，行程路线连线 + 方向箭头，点位按游玩顺序编号，有游记 / 无游记点位区分，地点类型使用数据库枚举（9 类） |
+| 搜索筛选 | 首页地图按年份 / 地点类型筛选（URL 驱动，点位与统计联动）；旅行列表关键词搜索（标题 / 描述 / 目的地）+ 年份筛选 |
 | 游记图文 | 地点 ↔ 游记一对多，Markdown 正文，多图上传（本地存储），列表 / 阅读 / 编辑三模式 |
 | 消费统计 | 分类记账（交通 / 住宿 / 餐饮 / 门票 / 购物 / 其他），可关联旅行日与具体打卡地点，日期时间精确到时分（24 小时制），Recharts 饼图占比，消费明细（支持逐条编辑 / 删除） |
+| 数据分析中心 | 汇总统计（旅行 / 天数 / 地点 / 游记 / 消费），年度统计柱状图，消费分类饼图，国家 / 城市分布，月度消费趋势，平均每天 / 单次旅行消费 |
+| 输入校验与安全 | 后端统一校验（lib/validate）：必填、长度、经纬度范围、金额正数、枚举合法性；JWT 生产环境强制配置 AUTH_SECRET；数据归属逐级校验（用户只能操作自己的数据） |
 
 ## 📸 运行截图
 
@@ -27,6 +30,8 @@
 | ![足迹地图](screenshots/04-trip-map.png) | ![游记](screenshots/05-blog.png) |
 | **游记阅读 · Markdown 渲染** | **消费统计 · 分类占比 + 明细编辑** |
 | ![游记阅读](screenshots/06-blog-read.png) | ![消费统计](screenshots/07-expenses.png) |
+| **数据分析中心 · 汇总统计与图表** | |
+| ![数据分析中心](screenshots/08-analytics.png) | |
 
 ## 🛠 技术栈
 
@@ -64,9 +69,11 @@ AUTH_SECRET="任意随机字符串，用于 JWT 签名"
 ### 4. 同步数据表并生成客户端
 
 ```bash
-npx prisma migrate dev   # 应用已有迁移（7 张表）
+npx prisma migrate dev   # 应用已有迁移（7 张表，5 个迁移）
 npx prisma generate      # 生成 Prisma Client
 ```
+
+> 迁移记录：初始化建表 → 消费关联地点 → 游记一地多篇 → 地点类型枚举 → 查询索引。
 
 ### 5. 生成演示数据（可选）
 
@@ -104,12 +111,15 @@ users ──< trips ──< trip_days ──< locations ──< blogs ──< bl
 | `users` | 用户账号 |
 | `trips` | 旅行（归属用户） |
 | `trip_days` | 旅行日（归属旅行） |
-| `locations` | 打卡地点（归属旅行日，含经纬度） |
+| `locations` | 打卡地点（归属旅行日，含经纬度、类型枚举） |
 | `blogs` | 游记（与地点一对多） |
 | `blog_images` | 游记图片 |
 | `expenses` | 消费记录（归属旅行，可选归属旅行日与地点） |
 
-完整字段见 [`prisma/schema.prisma`](prisma/schema.prisma)。
+**设计要点**：三级级联删除（用户→旅行→行程→地点→游记/图片）；消费在上级删除时 SET NULL 保留明细；地点类型用数据库枚举杜绝脏数据；一个地点可拥有多篇游记。
+
+📄 完整设计见 [`docs/database-design.md`](docs/database-design.md)（ER 图 / 字段 / 索引 / 级联策略）。
+🧪 系统测试清单见 [`docs/test-plan.md`](docs/test-plan.md)（功能 / 接口 / 异常 / 权限 / 兼容性）。
 
 ## 📁 目录结构
 
@@ -117,7 +127,8 @@ users ──< trips ──< trip_days ──< locations ──< blogs ──< bl
 app/
 ├── (auth)/            # 登录 / 注册页
 ├── (main)/            # 主界面（导航栏布局）
-│   ├── page.tsx       # 首页：足迹地图总览 + 统计
+│   ├── page.tsx       # 首页：足迹地图总览 + 统计 + 筛选（查询已拆分优化）
+│   ├── analytics/     # 数据分析中心
 │   ├── trips/         # 旅行列表 / 新建 / 详情 / 编辑
 │   │   └── [id]/      # 详情、旅行日、地图、消费统计
 │   └── locations/[id]/blog   # 地点游记
@@ -128,9 +139,10 @@ app/
 │   ├── locations/     # 地点、游记
 │   ├── expenses/      # 消费记录
 │   └── upload/        # 图片上传
-components/            # TripMap / LocationPicker / ExpensePage 等
-lib/                   # prisma 单例、auth、工具函数
+components/            # TripMap / AnalyticsCharts / HomeFilter / ExpensePage 等
+lib/                   # prisma 单例、auth、validate（输入校验）、工具函数
 prisma/                # schema + 迁移文件 + seed 脚本
+docs/                  # 数据库设计文档 + 系统测试清单
 ```
 
 ## 🧪 演示数据
