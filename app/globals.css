@@ -106,3 +106,14 @@ body {
 .markdown-body th {
   background: #f9fafb;
 }
+.markdown-body img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1rem auto;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+}
+.markdown-body p img {
+  margin: 0.5rem 0;
+}

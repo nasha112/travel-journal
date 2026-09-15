@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import ImageUploader from "@/components/ImageUploader";
 import MarkdownView from "@/components/MarkdownView";
@@ -49,6 +49,29 @@ export default function BlogPage({ data }: { data: BlogInitialData }) {
   const [saving, setSaving] = useState(false);
 
   const activeBlog = blogs.find((b) => b.id === activeId) ?? null;
+  const contentRef = useRef<HTMLTextAreaElement>(null);
+
+  /** 把已上传图片以 Markdown 语法插入正文光标处（图文对应） */
+  function insertImageAtCursor(url: string) {
+    const ta = contentRef.current;
+    const pos = ta?.selectionStart ?? content.length;
+    const markdown = `![图片]( ${url} )`;
+    // 确保插入内容独立成段：前后补换行
+    const before = content.slice(0, pos);
+    const after = content.slice(ta?.selectionEnd ?? pos);
+    const prefix = before === "" || before.endsWith("\n") ? "" : "\n";
+    const suffix = after === "" || after.startsWith("\n") ? "" : "\n";
+    const next = `${before}${prefix}${markdown}${suffix}${after}`;
+    setContent(next);
+    // 光标移到插入内容之后
+    requestAnimationFrame(() => {
+      if (ta) {
+        ta.focus();
+        const caret = pos + prefix.length + markdown.length;
+        ta.setSelectionRange(caret, caret);
+      }
+    });
+  }
 
   /** 进入编辑模式：新建或编辑某篇 */
   function startEdit(blog: BlogItemData | null) {
@@ -206,7 +229,12 @@ export default function BlogPage({ data }: { data: BlogInitialData }) {
                       {blog.content && ` · ${Math.max(1, Math.round(blog.content.length / 100))} 分钟阅读`}
                     </div>
                     <p className="text-sm text-gray-500 mt-1.5 line-clamp-2">
-                      {blog.content.replace(/[#>*`_\-\[\]()!]/g, "").slice(0, 80) || "（暂无正文）"}
+                      {blog.content
+                        .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
+                        .replace(/[#>*`_\-\[\]()!]/g, "")
+                        .replace(/\s+/g, " ")
+                        .trim()
+                        .slice(0, 80) || "（暂无正文）"}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
@@ -240,8 +268,14 @@ export default function BlogPage({ data }: { data: BlogInitialData }) {
       )}
 
       {/* 阅读模式 */}
-      {mode === "read" && activeBlog && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6 sm:p-8">
+      {mode === "read" && activeBlog && (() => {
+        // 已通过 Markdown 嵌入正文的图片不再重复展示在图集
+        const embedded = new Set(
+          [...activeBlog.content.matchAll(/!\[[^\]]*\]\(\s*([^)\s]+)\s*\)/g)].map((m) => m[1].trim())
+        );
+        const galleryImages = activeBlog.images.filter((img) => !embedded.has(img.url));
+        return (
+          <div className="bg-white rounded-xl border border-gray-200 p-6 sm:p-8">
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="text-2xl font-bold text-gray-800">{activeBlog.title}</h2>
@@ -265,9 +299,9 @@ export default function BlogPage({ data }: { data: BlogInitialData }) {
             </div>
           </div>
 
-          {activeBlog.images.length > 0 && (
+          {galleryImages.length > 0 && (
             <div className="mt-5 flex flex-wrap gap-3">
-              {activeBlog.images.map((img, i) => (
+              {galleryImages.map((img, i) => (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   key={i}
@@ -283,7 +317,8 @@ export default function BlogPage({ data }: { data: BlogInitialData }) {
             <MarkdownView content={activeBlog.content} />
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* 编辑模式（新建 / 修改） */}
       {mode === "edit" && (
@@ -305,16 +340,20 @@ export default function BlogPage({ data }: { data: BlogInitialData }) {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">游记正文（支持 Markdown）</label>
             <textarea
+              ref={contentRef}
               className={`${inputCls} min-h-64 resize-y font-mono`}
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder={"# 写下你的旅行故事\n\n支持 **加粗**、列表、链接等 Markdown 语法..."}
+              placeholder={"# 写下你的旅行故事\n\n支持 **加粗**、列表、链接等 Markdown 语法，上传图片后可在图片上点「插入正文」把图片嵌到对应段落..."}
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">游记图片</label>
-            <ImageUploader images={images} onChange={setImages} />
+            <ImageUploader images={images} onChange={setImages} onInsert={insertImageAtCursor} />
+            <p className="text-xs text-gray-400 mt-1.5">
+              上传后把鼠标移到图片上点「插入正文」，即可把图片嵌到正文光标所在位置
+            </p>
           </div>
 
           {error && (

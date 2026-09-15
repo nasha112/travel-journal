@@ -447,6 +447,15 @@ async function main() {
           const blog = await prisma.blog.create({
             data: { locationId: l.id, title: b.title, content: b.content },
           });
+          // 演示图文混排：首个地点首篇游记把其中一张图嵌入正文
+          if (blogList.indexOf(b) === 0) {
+            await prisma.blog.update({
+              where: { id: blog.id },
+              data: {
+                content: `${b.content}\n\n![旅行瞬间](https://picsum.photos/seed/travel-${l.id}-${blog.id}-1/800/600)\n\n> 图文对应：旅行中的随手记录。`,
+              },
+            });
+          }
           // 每篇游记附 2 张演示图片（稳定种子，照片墙使用）
           for (let pi = 0; pi < 2; pi++) {
             await prisma.blogImage.create({

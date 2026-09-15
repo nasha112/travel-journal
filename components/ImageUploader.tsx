@@ -2,13 +2,15 @@
 
 import { useRef, useState } from "react";
 
-/** 游记图片上传组件（多图），受控维护图片 URL 数组 */
+/** 游记图片上传组件（多图），受控维护图片 URL 数组；onInsert 用于把图片嵌入正文 */
 export default function ImageUploader({
   images,
   onChange,
+  onInsert,
 }: {
   images: string[];
   onChange: (urls: string[]) => void;
+  onInsert?: (url: string) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -53,6 +55,15 @@ export default function ImageUploader({
           <div key={i} className="relative group">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={url} alt={`游记图片 ${i + 1}`} className="w-28 h-28 object-cover rounded-lg border border-gray-200" />
+            {onInsert && (
+              <button
+                type="button"
+                onClick={() => onInsert(url)}
+                className="absolute bottom-1.5 left-1/2 -translate-x-1/2 text-[10px] bg-black/70 text-white px-2 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap"
+              >
+                ⤵ 插入正文
+              </button>
+            )}
             <button
               type="button"
               onClick={() => remove(url)}
