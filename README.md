@@ -32,8 +32,8 @@
 | ![足迹地图](screenshots/04-trip-map.png) | ![游记](screenshots/05-blog.png) |
 | **游记阅读 · Markdown 渲染** | **消费统计 · 分类占比 + 明细编辑** |
 | ![游记阅读](screenshots/06-blog-read.png) | ![消费统计](screenshots/07-expenses.png) |
-| **数据分析中心 · 汇总统计与图表** | |
-| ![数据分析中心](screenshots/08-analytics.png) | |
+| **游记编辑 · Tiptap 所见即所得（工具栏 + Slash / Bubble）** | **数据分析中心 · 汇总统计与图表** |
+| ![编辑器 V2](screenshots/09-editor-v2.png) | ![数据分析中心](screenshots/08-analytics.png) |
 
 ## 🛠 技术栈
 
