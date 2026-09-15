@@ -39,3 +39,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# IDE / AI 助手配置
+.idea/
+.vscode/
+.agents/
+.claude/
+.cursor/
+.devin/
+
+# 运行时用户上传文件
+/public/uploads/

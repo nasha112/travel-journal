@@ -1,0 +1,127 @@
+// 个人旅行足迹与游记管理系统 - 数据库模型
+// 共 7 张表：users / trips / trip_days / locations / blogs / blog_images / expenses
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// 用户表
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String
+  avatar    String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  trips Trip[]
+
+  @@map("users")
+}
+
+// 旅行表
+model Trip {
+  id          Int       @id @default(autoincrement())
+  title       String
+  description String?   @db.Text
+  cover       String?
+  startDate   DateTime? @map("start_date")
+  endDate     DateTime? @map("end_date")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  userId Int  @map("user_id")
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  days     TripDay[]
+  expenses Expense[]
+
+  @@map("trips")
+}
+
+// 旅行日表：一趟旅行包含多个旅行日
+model TripDay {
+  id        Int    @id @default(autoincrement())
+  dayNumber Int    @map("day_number") // 第几天
+  title     String? // 当日行程标题
+  date      DateTime?
+  note      String? @db.Text
+
+  tripId Int @map("trip_id")
+  trip   Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  locations Location[]
+  expenses  Expense[]
+
+  @@map("trip_days")
+}
+
+// 地点表：每个旅行日下可有多个打卡地点
+model Location {
+  id    Int    @id @default(autoincrement())
+  name  String // 地点名称
+  country String?
+  city   String?
+  lat    Float // 纬度
+  lng    Float // 经度
+  type   String? // 地点类型：景点/美食/住宿/其他
+  note   String? @db.Text
+
+  tripDayId Int @map("trip_day_id")
+  tripDay   TripDay @relation(fields: [tripDayId], references: [id], onDelete: Cascade)
+
+  blogs    Blog[] // 一个地点可有多篇游记
+  expenses Expense[]
+
+  @@map("locations")
+}
+
+// 游记表：一个地点可对应多篇游记
+model Blog {
+  id         Int      @id @default(autoincrement())
+  title      String
+  content    String   @db.LongText // 游记正文（Markdown）
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  locationId Int      @map("location_id")
+  location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  images BlogImage[]
+
+  @@index([locationId])
+  @@map("blogs")
+}
+
+// 游记图片表：一篇游记对应多张图片
+model BlogImage {
+  id     Int    @id @default(autoincrement())
+  url    String // 图片访问地址
+
+  blogId Int  @map("blog_id")
+  blog   Blog @relation(fields: [blogId], references: [id], onDelete: Cascade)
+
+  @@map("blog_images")
+}
+
+// 消费记录表
+model Expense {
+  id       Int      @id @default(autoincrement())
+  category String // 消费分类：交通/住宿/餐饮/门票/购物/其他
+  amount   Decimal  @db.Decimal(10, 2)
+  note     String?
+  date     DateTime?
+
+  tripId    Int      @map("trip_id")
+  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  tripDayId Int?     @map("trip_day_id")
+  tripDay   TripDay? @relation(fields: [tripDayId], references: [id], onDelete: SetNull)
+  locationId Int?    @map("location_id")
+  location   Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+
+  @@map("expenses")
+}

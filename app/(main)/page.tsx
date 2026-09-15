@@ -1,0 +1,179 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth";
+import TripMap from "@/components/ClientTripMap";
+import type { MapPoint } from "@/components/TripMap";
+
+export const dynamic = "force-dynamic";
+
+function formatDate(d: Date | null) {
+  if (!d) return "—";
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+export default async function HomePage() {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+
+  const trips = await prisma.trip.findMany({
+    where: { userId: user.id },
+    include: {
+      days: {
+        orderBy: { dayNumber: "asc" },
+        include: {
+          locations: { include: { blogs: { select: { id: true } } } },
+        },
+      },
+      expenses: true,
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  // 汇总统计
+  const totalLocations = trips.reduce(
+    (sum, t) => sum + t.days.reduce((s, d) => s + d.locations.length, 0),
+    0
+  );
+  const totalBlogs = trips.reduce(
+    (sum, t) => sum + t.days.reduce((s, d) => s + d.locations.filter((l) => l.blogs.length > 0).length, 0),
+    0
+  );
+  const totalExpense = trips.reduce(
+    (sum, t) => sum + t.expenses.reduce((s, e) => s + Number(e.amount), 0),
+    0
+  );
+
+  // 地图点位与路线
+  const points: MapPoint[] = [];
+  const lines: [number, number][][] = [];
+  for (const trip of trips) {
+    const tripLine: [number, number][] = [];
+    let order = 1; // 每趟旅行内按行程顺序编号
+    for (const day of trip.days) {
+      for (const loc of day.locations) {
+        points.push({
+          id: loc.id,
+          name: loc.name,
+          lat: loc.lat,
+          lng: loc.lng,
+          city: loc.city,
+          hasBlog: loc.blogs.length > 0,
+          order,
+        });
+        tripLine.push([loc.lat, loc.lng]);
+        order++;
+      }
+    }
+    if (tripLine.length >= 2) lines.push(tripLine);
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* 顶部欢迎区 */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">你好，{user.name}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">这里是你的全部旅行足迹</p>
+        </div>
+        <Link
+          href="/trips/new"
+          className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
+        >
+          + 新建旅行
+        </Link>
+      </div>
+
+      {/* 统计卡片 */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: "旅行次数", value: trips.length, icon: "✈️" },
+          { label: "打卡地点", value: totalLocations, icon: "📍" },
+          { label: "游记数量", value: totalBlogs, icon: "📝" },
+          { label: "累计消费", value: `¥${totalExpense.toLocaleString("zh-CN", { maximumFractionDigits: 0 })}`, icon: "💰" },
+        ].map((s) => (
+          <div key={s.label} className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="text-xs text-gray-400 mb-1">{s.icon} {s.label}</div>
+            <div className="text-xl font-bold text-gray-800">{s.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* 足迹地图 */}
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+          <h2 className="font-semibold text-gray-800">全部旅行足迹</h2>
+          <div className="flex items-center gap-4 text-xs text-gray-500">
+            <span className="flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block"></span> 有游记
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span> 无游记
+            </span>
+          </div>
+        </div>
+        <div className="h-[480px]">
+          {points.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-gray-400">
+              <div className="text-4xl mb-2">🗺️</div>
+              <p className="text-sm">还没有旅行足迹，先创建一趟旅行吧</p>
+              <Link href="/trips/new" className="mt-3 text-sm text-blue-600 hover:underline">
+                立即创建 →
+              </Link>
+            </div>
+          ) : (
+            <TripMap points={points} lines={lines} height="480px" />
+          )}
+        </div>
+      </div>
+
+      {/* 旅行列表 */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold text-gray-800">我的旅行</h2>
+          <Link href="/trips" className="text-sm text-blue-600 hover:underline">
+            查看全部
+          </Link>
+        </div>
+        {trips.length === 0 ? (
+          <div className="bg-white rounded-xl border border-dashed border-gray-300 p-8 text-center text-gray-400 text-sm">
+            暂无旅行记录
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {trips.slice(0, 6).map((trip) => {
+              const locCount = trip.days.reduce((s, d) => s + d.locations.length, 0);
+              const exp = trip.expenses.reduce((s, e) => s + Number(e.amount), 0);
+              return (
+                <Link
+                  key={trip.id}
+                  href={`/trips/${trip.id}`}
+                  className="bg-white rounded-xl border border-gray-200 hover:shadow-md transition-shadow overflow-hidden"
+                >
+                  <div className="h-32 bg-gradient-to-br from-blue-100 via-sky-100 to-indigo-100 flex items-center justify-center text-3xl">
+                    {trip.cover ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={trip.cover} alt={trip.title} className="w-full h-full object-cover" />
+                    ) : (
+                      "🏔️"
+                    )}
+                  </div>
+                  <div className="p-4">
+                    <div className="font-semibold text-gray-800 truncate">{trip.title}</div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {formatDate(trip.startDate)} ~ {formatDate(trip.endDate)}
+                    </div>
+                    <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
+                      <span>📍 {locCount} 个地点</span>
+                      <span>💰 ¥{exp.toLocaleString("zh-CN", { maximumFractionDigits: 0 })}</span>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
