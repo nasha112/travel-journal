@@ -1,10 +1,11 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ImageUploader from "@/components/ImageUploader";
 import MarkdownView from "@/components/MarkdownView";
-import MarkdownEditor, { type MarkdownEditorHandle } from "@/components/MarkdownEditor";
+import TravelEditor, { type TravelEditorHandle } from "@/components/editor/TravelEditor";
+import { extractImageUrls } from "@/components/editor/markdown";
 import { locationTypeLabel } from "@/lib/utils";
 
 export type BlogLocationData = {
@@ -50,7 +51,37 @@ export default function BlogPage({ data }: { data: BlogInitialData }) {
   const [saving, setSaving] = useState(false);
 
   const activeBlog = blogs.find((b) => b.id === activeId) ?? null;
-  const editorRef = useRef<MarkdownEditorHandle>(null);
+  const editorRef = useRef<TravelEditorHandle>(null);
+  // 未保存状态：对比当前 Markdown 与最后一次保存的内容
+  const [dirty, setDirty] = useState(false);
+  const savedContentRef = useRef("");
+
+  /** 离开页面时若有未保存修改则提示 */
+  useEffect(() => {
+    if (!dirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [dirty]);
+
+  /** 把已上传图片以 Markdown 语法插入正文光标处（图文对应） */
+  function insertImageAtCursor(url: string) {
+    editorRef.current?.insertImage(url);
+  }
+
+  /** 编辑器内上传的图片同步加入图集（去重） */
+  function handleEditorImageUploaded(url: string) {
+    setImages((prev) => (prev.includes(url) ? prev : [...prev, url]));
+  }
+
+  /** 编辑器内容变化：更新 Markdown + 标记未保存 */
+  function handleContentChange(markdown: string) {
+    setContent(markdown);
+    setDirty(markdown !== savedContentRef.current);
+  }
 
   /** 进入编辑模式：新建或编辑某篇 */
   function startEdit(blog: BlogItemData | null) {
@@ -58,6 +89,8 @@ export default function BlogPage({ data }: { data: BlogInitialData }) {
     setTitle(blog?.title ?? "");
     setContent(blog?.content ?? "");
     setImages(blog?.images.map((i) => i.url) ?? []);
+    savedContentRef.current = blog?.content ?? "";
+    setDirty(false);
     setError("");
     setMode("edit");
   }
@@ -72,10 +105,12 @@ export default function BlogPage({ data }: { data: BlogInitialData }) {
     try {
       const isEdit = activeId != null;
       const url = isEdit ? `/api/blogs/${activeId}` : `/api/locations/${location.id}/blog`;
+      // 图集 = 正文中出现的图片 ∪ 已上传图片（正文图片同步进图集，保证照片墙完整）
+      const bodyImages = Array.from(new Set([...extractImageUrls(content), ...images]));
       const res = await fetch(url, {
         method: isEdit ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, content, images }),
+        body: JSON.stringify({ title, content, images: bodyImages }),
       });
       const result = await res.json();
       if (!res.ok) {
@@ -88,6 +123,8 @@ export default function BlogPage({ data }: { data: BlogInitialData }) {
       } else {
         setBlogs((prev) => [result, ...prev]);
       }
+      savedContentRef.current = content;
+      setDirty(false);
       setMode("list");
       router.refresh();
     } catch {
@@ -302,7 +339,18 @@ export default function BlogPage({ data }: { data: BlogInitialData }) {
       {/* 编辑模式（新建 / 修改） */}
       {mode === "edit" && (
         <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
-          <h2 className="font-semibold text-gray-800">{activeId == null ? "写游记" : "编辑游记"}</h2>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <h2 className="font-semibold text-gray-800">{activeId == null ? "写游记" : "编辑游记"}</h2>
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full border ${
+                dirty
+                  ? "bg-amber-50 text-amber-600 border-amber-200"
+                  : "bg-emerald-50 text-emerald-600 border-emerald-200"
+              }`}
+            >
+              {dirty ? "● 有未保存修改" : "✓ 已保存"}
+            </span>
+          </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -311,30 +359,40 @@ export default function BlogPage({ data }: { data: BlogInitialData }) {
             <input
               className={inputCls}
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                setDirty(true);
+              }}
               placeholder="给这段旅程起个标题"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">游记正文（支持 Markdown，右侧实时预览）</label>
-            <MarkdownEditor
+            <label className="block text-sm font-medium text-gray-700 mb-1">游记正文</label>
+            <TravelEditor
+              key={activeId ?? "new"}
               ref={editorRef}
-              value={content}
-              onChange={setContent}
-              placeholder={"# 写下你的旅行故事\n\n用上方工具栏一键插入标题、加粗、列表等格式..."}
+              initialContent={content}
+              onChange={handleContentChange}
+              onImageUploaded={handleEditorImageUploaded}
             />
+            <p className="text-xs text-gray-400 mt-1.5">
+              输入 / 打开插入菜单 · 选中文字可加粗 / 斜体 / 链接 · 支持标题、列表、引用、代码块、分割线
+            </p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">游记图片</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">游记图片（图集）</label>
             <ImageUploader
               images={images}
-              onChange={setImages}
-              onInsert={(url) => editorRef.current?.insertImage(url)}
+              onChange={(urls) => {
+                setImages(urls);
+                setDirty(true);
+              }}
+              onInsert={insertImageAtCursor}
             />
             <p className="text-xs text-gray-400 mt-1.5">
-              上传后把鼠标移到图片上点「插入正文」，图片会插入到编辑区光标处，并在右侧预览直接显示
+              上传后把鼠标移到图片上点「插入正文」，图片会插入到正文光标处；正文中的图片会自动同步进图集
             </p>
           </div>
 
@@ -352,8 +410,10 @@ export default function BlogPage({ data }: { data: BlogInitialData }) {
             </button>
             <button
               onClick={() => {
+                if (dirty && !confirm("你有未保存的修改，确定离开吗？")) return;
                 setMode(activeId != null ? "read" : "list");
                 setError("");
+                setDirty(false);
               }}
               className="text-gray-500 hover:text-gray-700 text-sm px-4 py-2.5"
             >
