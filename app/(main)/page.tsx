@@ -3,7 +3,9 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import TripMap from "@/components/ClientTripMap";
+import HomeFilter from "@/components/HomeFilter";
 import type { MapPoint } from "@/components/TripMap";
+import type { LocationType } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -12,12 +14,42 @@ function formatDate(d: Date | null) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ year?: string; type?: string }>;
+}) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const trips = await prisma.trip.findMany({
+  const sp = await searchParams;
+  const year = sp.year ? Number(sp.year) : null;
+  const type = (sp.type as LocationType) || null;
+
+  // 全部旅行（用于年份下拉）
+  const allTrips = await prisma.trip.findMany({
     where: { userId: user.id },
+    select: { startDate: true },
+  });
+  const years = Array.from(
+    new Set(allTrips.map((t) => t.startDate?.getFullYear()).filter((y): y is number => !!y))
+  ).sort((a, b) => b - a);
+
+  const trips = await prisma.trip.findMany({
+    where: {
+      userId: user.id,
+      ...(year
+        ? {
+            startDate: {
+              gte: new Date(`${year}-01-01T00:00:00`),
+              lt: new Date(`${year + 1}-01-01T00:00:00`),
+            },
+          }
+        : {}),
+      ...(type
+        ? { days: { some: { locations: { some: { type } } } } }
+        : {}),
+    },
     include: {
       days: {
         orderBy: { dayNumber: "asc" },
@@ -52,6 +84,8 @@ export default async function HomePage() {
     let order = 1; // 每趟旅行内按行程顺序编号
     for (const day of trip.days) {
       for (const loc of day.locations) {
+        // 类型筛选时只展示匹配类型的地点
+        if (type && loc.type !== type) continue;
         points.push({
           id: loc.id,
           name: loc.name,
@@ -101,15 +135,18 @@ export default async function HomePage() {
 
       {/* 足迹地图 */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between gap-3 flex-wrap">
           <h2 className="font-semibold text-gray-800">全部旅行足迹</h2>
-          <div className="flex items-center gap-4 text-xs text-gray-500">
-            <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block"></span> 有游记
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span> 无游记
-            </span>
+          <div className="flex items-center gap-4">
+            <HomeFilter years={years} />
+            <div className="flex items-center gap-4 text-xs text-gray-500">
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block"></span> 有游记
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span> 无游记
+              </span>
+            </div>
           </div>
         </div>
         <div className="h-[480px]">
