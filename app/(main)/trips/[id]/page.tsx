@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth";
 import TripActions from "@/components/TripActions";
 import DeleteDayButton from "@/components/DeleteDayButton";
 import TripStatusBadge from "@/components/TripStatusBadge";
+import TripAnalytics, { type TripAnalyticsData } from "@/components/TripAnalytics";
 import { formatDate, formatMoney } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -26,13 +27,80 @@ export default async function TripDetailPage({ params }: { params: Promise<{ id:
           _count: { select: { expenses: true } },
         },
       },
-      expenses: { select: { amount: true } },
+      expenses: {
+        select: { amount: true, category: true, tripDayId: true, locationId: true },
+      },
     },
   });
   if (!trip) redirect("/trips");
 
   const locationCount = trip.days.reduce((s, d) => s + d.locations.length, 0);
   const totalExpense = trip.expenses.reduce((s, e) => s + Number(e.amount), 0);
+
+  // ===== 单次旅行分析：基于已有 7 张表聚合，不新增表 =====
+  const dayNumberById = new Map<number, number>();
+  const locationNameById = new Map<number, string>();
+  for (const d of trip.days) {
+    dayNumberById.set(d.id, d.dayNumber);
+    for (const l of d.locations) locationNameById.set(l.id, l.name);
+  }
+
+  const categoryAgg = new Map<string, number>();
+  const dayExpenseAgg = new Map<number, number>();
+  const locExpenseAgg = new Map<number, number>();
+  for (const e of trip.expenses) {
+    const amount = Number(e.amount);
+    categoryAgg.set(e.category, (categoryAgg.get(e.category) ?? 0) + amount);
+    if (e.tripDayId) dayExpenseAgg.set(e.tripDayId, (dayExpenseAgg.get(e.tripDayId) ?? 0) + amount);
+    if (e.locationId) locExpenseAgg.set(e.locationId, (locExpenseAgg.get(e.locationId) ?? 0) + amount);
+  }
+
+  const typeAgg = new Map<string, number>();
+  const blogByDayAgg = new Map<number, number>();
+  let blogCount = 0;
+  for (const d of trip.days) {
+    for (const l of d.locations) {
+      typeAgg.set(l.type ?? "OTHER", (typeAgg.get(l.type ?? "OTHER") ?? 0) + 1);
+      if (l.blogs.length > 0) {
+        blogCount += l.blogs.length;
+        blogByDayAgg.set(d.dayNumber, (blogByDayAgg.get(d.dayNumber) ?? 0) + l.blogs.length);
+      }
+    }
+  }
+
+  let topDay: { day: number; total: number } | null = null;
+  for (const [dayId, total] of dayExpenseAgg) {
+    const dayNo = dayNumberById.get(dayId);
+    if (dayNo == null) continue;
+    if (!topDay || total > topDay.total) topDay = { day: dayNo, total };
+  }
+
+  let topLocation: { name: string; total: number } | null = null;
+  for (const [locId, total] of locExpenseAgg) {
+    const name = locationNameById.get(locId);
+    if (!name) continue;
+    if (!topLocation || total > topLocation.total) topLocation = { name, total };
+  }
+
+  const analytics: TripAnalyticsData = {
+    tripDays: trip.days.length,
+    locationCount,
+    blogCount,
+    totalExpense,
+    avgDaily: trip.days.length > 0 ? totalExpense / trip.days.length : 0,
+    categoryData: [...categoryAgg.entries()].map(([name, value]) => ({ name, value })),
+    dailyExpense: trip.days.map((d) => ({
+      day: d.dayNumber,
+      total: dayExpenseAgg.get(d.id) ?? 0,
+    })),
+    locationTypeData: [...typeAgg.entries()].map(([name, count]) => ({ name, count })),
+    blogByDay: trip.days.map((d) => ({
+      day: d.dayNumber,
+      count: blogByDayAgg.get(d.dayNumber) ?? 0,
+    })),
+    topDay,
+    topLocation,
+  };
 
   return (
     <div className="space-y-6">
@@ -69,6 +137,20 @@ export default async function TripDetailPage({ params }: { params: Promise<{ id:
           </div>
           <TripActions tripId={trip.id} />
         </div>
+      </div>
+
+      {/* 旅行数据分析 */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold text-gray-800">旅行数据分析</h2>
+          <Link
+            href={`/trips/${trip.id}/review`}
+            className="text-sm text-blue-600 hover:text-blue-700 border border-blue-200 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            📖 打开旅行回顾 →
+          </Link>
+        </div>
+        <TripAnalytics data={analytics} />
       </div>
 
       {/* 时间轴 */}

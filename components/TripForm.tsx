@@ -149,7 +149,7 @@ export default function TripForm({ trip }: { trip?: TripFormData }) {
               ))}
             </select>
             <p className="text-xs text-gray-400 mt-1">
-              已按起止日期自动判断，可手动修改（计划中 / 进行中 / 已完成）
+              修改起止日期时自动按当前日期推断，最终以此处保存的业务状态为准
             </p>
           </div>
 

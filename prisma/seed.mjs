@@ -444,9 +444,18 @@ async function main() {
         // 游记（一个地点可有多篇）
         const blogList = loc.blog ? [loc.blog] : loc.blogs ?? [];
         for (const b of blogList) {
-          await prisma.blog.create({
+          const blog = await prisma.blog.create({
             data: { locationId: l.id, title: b.title, content: b.content },
           });
+          // 每篇游记附 2 张演示图片（稳定种子，照片墙使用）
+          for (let pi = 0; pi < 2; pi++) {
+            await prisma.blogImage.create({
+              data: {
+                blogId: blog.id,
+                url: `https://picsum.photos/seed/travel-${l.id}-${blog.id}-${pi}/800/600`,
+              },
+            });
+          }
         }
       }
 
