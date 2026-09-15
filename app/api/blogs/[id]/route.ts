@@ -26,6 +26,12 @@ export async function PUT(request: Request, { params }: Params) {
     if (!title || !title.trim()) {
       return NextResponse.json({ error: "游记标题不能为空" }, { status: 400 });
     }
+    if (title.trim().length > 200) {
+      return NextResponse.json({ error: "游记标题不能超过 200 个字符" }, { status: 400 });
+    }
+    if (typeof content !== "string" || content.length > 100_000) {
+      return NextResponse.json({ error: "游记内容不合法或超出长度限制" }, { status: 400 });
+    }
 
     const imageUrls: string[] = Array.isArray(images) ? images : [];
 

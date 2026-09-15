@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
+import { validateLocationInput } from "@/lib/validate";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -20,14 +21,20 @@ export async function PUT(request: Request, { params }: Params) {
   if (!loc) return NextResponse.json({ error: "地点不存在" }, { status: 404 });
 
   try {
-    const { name, country, city, lat, lng, type, note } = await request.json();
-    if (!name || !name.trim()) {
-      return NextResponse.json({ error: "地点名称不能为空" }, { status: 400 });
-    }
+    const body = await request.json();
+    // 编辑时以提交值 + 原值合并后校验
+    const merged = {
+      ...body,
+      lat: body.lat != null ? Number(body.lat) : loc.lat,
+      lng: body.lng != null ? Number(body.lng) : loc.lng,
+    };
+    const check = validateLocationInput(merged);
+    if (!check.ok) return NextResponse.json({ error: check.error }, { status: 400 });
+    const { name, country, city, lat, lng, type, note } = body;
     const updated = await prisma.location.update({
       where: { id: loc.id },
       data: {
-        name: name.trim(),
+        name: (name as string).trim(),
         country: country ?? loc.country,
         city: city ?? loc.city,
         lat: lat != null ? Number(lat) : loc.lat,

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
+import { validateDayInput } from "@/lib/validate";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -21,12 +22,17 @@ export async function PUT(request: Request, { params }: Params) {
   if (!day) return NextResponse.json({ error: "旅行日不存在" }, { status: 404 });
 
   try {
-    const { title, date, note } = await request.json();
+    const body = await request.json();
+    // 合并原值后整体校验（编辑允许部分字段）
+    const merged = { ...body, title: body.title ?? day.title, date: body.date ?? day.date };
+    const check = validateDayInput(merged);
+    if (!check.ok) return NextResponse.json({ error: check.error }, { status: 400 });
+    const { title, date, note } = body;
     const updated = await prisma.tripDay.update({
       where: { id: day.id },
       data: {
         title: title ?? day.title,
-        date: date ? new Date(date) : date === null ? null : day.date,
+        date: date ? new Date(date as string) : date === null ? null : day.date,
         note: note ?? day.note,
       },
     });

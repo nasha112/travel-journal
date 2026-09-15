@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
+import { validateLocationInput } from "@/lib/validate";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -16,18 +17,15 @@ export async function POST(request: Request, { params }: Params) {
   if (!day) return NextResponse.json({ error: "旅行日不存在" }, { status: 404 });
 
   try {
-    const { name, country, city, lat, lng, type, note } = await request.json();
-    if (!name || !name.trim()) {
-      return NextResponse.json({ error: "地点名称不能为空" }, { status: 400 });
-    }
-    if (lat == null || lng == null || isNaN(Number(lat)) || isNaN(Number(lng))) {
-      return NextResponse.json({ error: "请选择地点的经纬度" }, { status: 400 });
-    }
+    const body = await request.json();
+    const check = validateLocationInput(body);
+    if (!check.ok) return NextResponse.json({ error: check.error }, { status: 400 });
+    const { name, country, city, lat, lng, type, note } = body;
 
     const location = await prisma.location.create({
       data: {
         tripDayId: day.id,
-        name: name.trim(),
+        name: (name as string).trim(),
         country: country || null,
         city: city || null,
         lat: Number(lat),

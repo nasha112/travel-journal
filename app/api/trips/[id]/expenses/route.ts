@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
-import { EXPENSE_CATEGORIES } from "@/lib/utils";
+import { validateExpenseInput } from "@/lib/validate";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -34,15 +34,10 @@ export async function POST(request: Request, { params }: Params) {
   if (!trip) return NextResponse.json({ error: "旅行不存在" }, { status: 404 });
 
   try {
-    const { category, amount, note, date, tripDayId, locationId } = await request.json();
-
-    if (!category || !EXPENSE_CATEGORIES.includes(category)) {
-      return NextResponse.json({ error: "请选择有效的消费分类" }, { status: 400 });
-    }
-    const num = Number(amount);
-    if (isNaN(num) || num <= 0) {
-      return NextResponse.json({ error: "金额必须大于 0" }, { status: 400 });
-    }
+    const body = await request.json();
+    const check = validateExpenseInput(body);
+    if (!check.ok) return NextResponse.json({ error: check.error }, { status: 400 });
+    const { category, amount, note, date, tripDayId, locationId } = body;
 
     // 校验旅行日归属
     if (tripDayId != null) {
@@ -68,10 +63,10 @@ export async function POST(request: Request, { params }: Params) {
         tripId: trip.id,
         tripDayId: tripDayId ? Number(tripDayId) : null,
         locationId: locationId ? Number(locationId) : null,
-        category,
-        amount: num,
+        category: category as string,
+        amount: Number(amount),
         note: note || null,
-        date: date ? new Date(date) : null,
+        date: new Date(date as string),
       },
       include: {
         tripDay: { select: { dayNumber: true, title: true } },

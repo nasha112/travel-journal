@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
+import { validateTripInput } from "@/lib/validate";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -48,17 +49,17 @@ export async function PUT(request: Request, { params }: Params) {
   if (!existing) return NextResponse.json({ error: "旅行不存在" }, { status: 404 });
 
   try {
-    const { title, description, startDate, endDate, cover } = await request.json();
-    if (!title || !title.trim()) {
-      return NextResponse.json({ error: "旅行名称不能为空" }, { status: 400 });
-    }
+    const body = await request.json();
+    const check = validateTripInput(body);
+    if (!check.ok) return NextResponse.json({ error: check.error }, { status: 400 });
+    const { title, description, startDate, endDate, cover } = body;
     const trip = await prisma.trip.update({
       where: { id: Number(id) },
       data: {
-        title: title.trim(),
+        title: (title as string).trim(),
         description: description ?? existing.description,
-        startDate: startDate ? new Date(startDate) : null,
-        endDate: endDate ? new Date(endDate) : null,
+        startDate: startDate ? new Date(startDate as string) : null,
+        endDate: endDate ? new Date(endDate as string) : null,
         cover: cover ?? existing.cover,
       },
     });

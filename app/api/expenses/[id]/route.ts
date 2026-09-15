@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
-import { EXPENSE_CATEGORIES } from "@/lib/utils";
+import { validateExpenseInput } from "@/lib/validate";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -19,24 +19,20 @@ export async function PUT(request: Request, { params }: Params) {
   if (!expense) return NextResponse.json({ error: "消费记录不存在" }, { status: 404 });
 
   try {
-    const { category, amount, note, date, tripDayId, locationId } = await request.json();
+    const body = await request.json();
+    // 编辑时按提交字段做校验（部分字段可省略）
+    const partial = { ...body };
+    if (partial.amount !== undefined) partial.amount = Number(partial.amount);
+    if (partial.date === "") delete partial.date; // 允许清空日期（置 null）
+    const check = validateExpenseInput(partial);
+    if (!check.ok) return NextResponse.json({ error: check.error }, { status: 400 });
+    const { category, amount, note, date, tripDayId, locationId } = body;
 
     const data: Record<string, unknown> = {};
-    if (category !== undefined) {
-      if (!EXPENSE_CATEGORIES.includes(category)) {
-        return NextResponse.json({ error: "请选择有效的消费分类" }, { status: 400 });
-      }
-      data.category = category;
-    }
-    if (amount !== undefined) {
-      const num = Number(amount);
-      if (isNaN(num) || num <= 0) {
-        return NextResponse.json({ error: "金额必须大于 0" }, { status: 400 });
-      }
-      data.amount = num;
-    }
+    if (category !== undefined) data.category = category;
+    if (amount !== undefined) data.amount = Number(amount);
     if (note !== undefined) data.note = note || null;
-    if (date !== undefined) data.date = date ? new Date(date) : null;
+    if (date !== undefined) data.date = date ? new Date(date as string) : null;
     if (tripDayId !== undefined) {
       if (tripDayId == null) {
         data.tripDayId = null;
