@@ -5,15 +5,17 @@ import { usePathname, useRouter } from "next/navigation";
 /**
  * 全局返回键：显示在 (main) 布局内容区左上角。
  * - 首页不显示
- * - 点击返回上一页（等价浏览器后退）
- * - 无历史记录（如直接打开链接）时回退到首页
+ * - 页面自身已有返回链接时隐藏（如旅行回顾、行程地图），避免重复
+ * - 点击返回上一页（等价浏览器后退）；无历史记录时回退到首页
  */
+const HIDE_ON_PATTERNS = [/^\/trips\/\d+\/review$/, /^\/trips\/\d+\/map$/];
+
 export default function BackButton() {
   const pathname = usePathname();
   const router = useRouter();
 
-  // 首页不需要返回
-  if (pathname === "/") return null;
+  // 首页不需要返回；已有页面级返回链接的页面不重复显示
+  if (pathname === "/" || HIDE_ON_PATTERNS.some((p) => p.test(pathname))) return null;
 
   const goBack = () => {
     if (typeof window !== "undefined" && window.history.length > 1) {
