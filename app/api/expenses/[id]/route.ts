@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
+import { parseIdParam } from "@/lib/parse-id";
 import { validateExpenseInput } from "@/lib/validate";
 
 type Params = { params: Promise<{ id: string }> };
@@ -15,7 +16,9 @@ export async function PUT(request: Request, { params }: Params) {
   if (!userId) return NextResponse.json({ error: "未登录" }, { status: 401 });
 
   const { id } = await params;
-  const expense = await findOwnExpense(Number(id), userId);
+  const parsedId = parseIdParam(id);
+  if (!parsedId) return NextResponse.json({ error: "参数错误" }, { status: 400 });
+  const expense = await findOwnExpense(parsedId, userId);
   if (!expense) return NextResponse.json({ error: "消费记录不存在" }, { status: 404 });
 
   try {
@@ -78,7 +81,9 @@ export async function DELETE(_request: Request, { params }: Params) {
   if (!userId) return NextResponse.json({ error: "未登录" }, { status: 401 });
 
   const { id } = await params;
-  const expense = await findOwnExpense(Number(id), userId);
+  const parsedId = parseIdParam(id);
+  if (!parsedId) return NextResponse.json({ error: "参数错误" }, { status: 400 });
+  const expense = await findOwnExpense(parsedId, userId);
   if (!expense) return NextResponse.json({ error: "消费记录不存在" }, { status: 404 });
 
   await prisma.expense.delete({ where: { id: expense.id } });

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
+import { parseIdParam } from "@/lib/parse-id";
 import { validateTripInput } from "@/lib/validate";
 
 type Params = { params: Promise<{ id: string }> };
@@ -31,7 +32,9 @@ export async function GET(_request: Request, { params }: Params) {
   if (!userId) return NextResponse.json({ error: "未登录" }, { status: 401 });
 
   const { id } = await params;
-  const trip = await findOwnTrip(Number(id), userId);
+  const parsedId = parseIdParam(id);
+  if (!parsedId) return NextResponse.json({ error: "参数错误" }, { status: 400 });
+  const trip = await findOwnTrip(parsedId, userId);
   if (!trip) return NextResponse.json({ error: "旅行不存在" }, { status: 404 });
 
   const locationCount = trip.days.reduce((s, d) => s + d.locations.length, 0);
@@ -45,7 +48,9 @@ export async function PUT(request: Request, { params }: Params) {
   if (!userId) return NextResponse.json({ error: "未登录" }, { status: 401 });
 
   const { id } = await params;
-  const existing = await prisma.trip.findFirst({ where: { id: Number(id), userId } });
+  const parsedId = parseIdParam(id);
+  if (!parsedId) return NextResponse.json({ error: "参数错误" }, { status: 400 });
+  const existing = await prisma.trip.findFirst({ where: { id: parsedId, userId } });
   if (!existing) return NextResponse.json({ error: "旅行不存在" }, { status: 404 });
 
   try {
@@ -54,7 +59,7 @@ export async function PUT(request: Request, { params }: Params) {
     if (!check.ok) return NextResponse.json({ error: check.error }, { status: 400 });
     const { title, description, startDate, endDate, cover, status } = body;
     const trip = await prisma.trip.update({
-      where: { id: Number(id) },
+      where: { id: parsedId },
       data: {
         title: (title as string).trim(),
         description: description ?? existing.description,
@@ -75,9 +80,11 @@ export async function DELETE(_request: Request, { params }: Params) {
   if (!userId) return NextResponse.json({ error: "未登录" }, { status: 401 });
 
   const { id } = await params;
-  const existing = await prisma.trip.findFirst({ where: { id: Number(id), userId } });
+  const parsedId = parseIdParam(id);
+  if (!parsedId) return NextResponse.json({ error: "参数错误" }, { status: 400 });
+  const existing = await prisma.trip.findFirst({ where: { id: parsedId, userId } });
   if (!existing) return NextResponse.json({ error: "旅行不存在" }, { status: 404 });
 
-  await prisma.trip.delete({ where: { id: Number(id) } });
+  await prisma.trip.delete({ where: { id: parsedId } });
   return NextResponse.json({ ok: true });
 }
